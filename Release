@@ -1,0 +1,8 @@
+Origin: uz.ra's repo
+Label: uz.ra
+Suite: stable
+Version: 1.0
+Codename: uz.ra
+Architectures: iphoneos-arm iphoneos-arm64
+Components: main
+Description: uz.ra's garbage dump

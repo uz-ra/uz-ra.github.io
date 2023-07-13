@@ -1,0 +1,68 @@
+Package: jp.uzra.cleansuggest
+Version: 1.1
+Architecture: iphoneos-arm64
+Maintainer: uz.ra
+Installed-Size: 184
+Depends: mobilesubstrate (>= 0.9.5000)
+Filename: ./debs/jp.uzra.cleansuggest_1.1_iphoneos-arm64.deb
+Size: 3130
+MD5sum: f7b7c3e184bb5d08a674007eb316cad5
+SHA1: 7ef3fc595bea683379d695ce8161b22effd08fd4
+SHA256: f9ae33884e6f9a7238d5d84aca88d02509a2ad68d4d3608504aa365c6208c303
+Section: Tweaks
+Description: Hide the labels in Siri suggestion widget
+Author: uz.ra
+Icon: https://media.discordapp.net/attachments/813615730473304064/1125737588515409920/phonto.JPG
+Name: CleanSuggest
+
+Package: jp.uzra.cleansuggest
+Version: 1.1
+Architecture: iphoneos-arm
+Maintainer: uz.ra
+Installed-Size: 184
+Depends: mobilesubstrate (>= 0.9.5000)
+Filename: ./debs/jp.uzra.cleansuggest_1.1_iphoneos-arm.deb
+Size: 3362
+MD5sum: 47ce7d1ab629d6f242858dfb5d4536c7
+SHA1: 377f43e9284c782de80c72a2bb6e6d7c5fa2a563
+SHA256: d26b1b17fb59e7d9f268d8f06050a685678bed517b1f01e16834f21ffedf8641
+Section: Tweaks
+Description: Hide the labels in Siri suggestion widget
+Author: uz.ra
+Icon: https://media.discordapp.net/attachments/813615730473304064/1125737588515409920/phonto.JPG
+Name: CleanSuggest
+
+Package: jp.uzra.medousa
+Version: 1.1
+Architecture: iphoneos-arm64
+Maintainer: uz.ra
+Installed-Size: 184
+Depends: mobilesubstrate (>= 0.9.5000)
+Filename: ./debs/jp.uzra.medousa_1.1_iphoneos-arm64.deb
+Size: 3540
+MD5sum: cf79601f8f86d54a252118bb5d1ec86e
+SHA1: 653517ec305c562a0375f3fe6685cc94c5b82ec3
+SHA256: b04d0707aa81f84c3546dc23cfe3e4514cfa88c7843d507b8f6f713252102071
+Section: Tweaks
+Description: Enable "medusa" feature, generally known as iPad multi tasking feature, on ur iPhone!
+Author: uz.ra
+Icon: https://cdn.discordapp.com/attachments/813615730473304064/1127445655615451337/Medusa.jpg
+Name: medousa
+
+Package: jp.uzra.medousa
+Version: 1.1
+Architecture: iphoneos-arm
+Maintainer: uz.ra
+Installed-Size: 184
+Depends: mobilesubstrate (>= 0.9.5000)
+Filename: ./debs/jp.uzra.medousa_1.1_iphoneos-arm.deb
+Size: 3778
+MD5sum: 0e715933549c359149bf3e7792ab0bbc
+SHA1: 17295d25bd7fdc64ed602e5ec18b586de96a86bb
+SHA256: a34890786fd64933147d6b08f337c8839d903c5535fec427855b7ded089d71ff
+Section: Tweaks
+Description: Enable "medusa" feature, generally known as iPad multi tasking feature, on ur iPhone!
+Author: uz.ra
+Icon: https://cdn.discordapp.com/attachments/813615730473304064/1127445655615451337/Medusa.jpg
+Name: medousa
+
