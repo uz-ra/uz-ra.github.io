@@ -32,6 +32,57 @@ Author: uz.ra
 Icon: https://media.discordapp.net/attachments/813615730473304064/1125737588515409920/phonto.JPG
 Name: CleanSuggest
 
+Package: jp.uzra.clearity
+Version: 1.0-4+debug
+Architecture: iphoneos-arm
+Maintainer: uz.ra
+Installed-Size: 216
+Depends: mobilesubstrate (>= 0.9.5000)
+Filename: ./debs/jp.uzra.clearity_1.0-4+debug_iphoneos-arm.deb
+Size: 4256
+MD5sum: 66e033c5d8b861c1d696b94921248652
+SHA1: e164fe70623788fe67295d320a733b94c8d68f3e
+SHA256: 7040629fd55b8ae9074b51516a623077ac593002a904cb6aadd11d571727ec95
+Section: Tweaks
+Description: Clearify everything! Ported misaka tweak for Jailbreak.
+Author: uz.ra
+Icon: https://cdn.discordapp.com/attachments/813615730473304064/1084290090387378186/phonto.jpg
+Name: Clearity
+
+Package: jp.uzra.cluri
+Version: 1.0
+Architecture: iphoneos-arm
+Maintainer: uz.ra
+Installed-Size: 188
+Depends: mobilesubstrate (>= 0.9.5000)
+Filename: ./debs/jp.uzra.cluri_1.0_iphoneos-arm.deb
+Size: 5456
+MD5sum: 5f5f468505327eb7afc695b7c3216f40
+SHA1: cd912cea26b44bf9c967dda75a588cfe849e2e57
+SHA256: d43245418dad55cf55ce76861c6487a2e466f336e333b44a2b2ccbf2ad8e8c91
+Section: Tweaks
+Description: Enables portrait & landscape rotate, orientation lock everywhere (HomeScreen, LockScreen & most apps) !
+Author: uz.ra
+Icon: https://media.discordapp.net/attachments/813615730473304064/1117706654348234793/0C38DA11-4CF0-434E-A5DC-A7344C7F96F9.png
+Name: Cluri
+
+Package: jp.uzra.cluri
+Version: 1.0
+Architecture: iphoneos-arm64
+Maintainer: uz.ra
+Installed-Size: 188
+Depends: mobilesubstrate (>= 0.9.5000)
+Filename: ./debs/jp.uzra.cluri_1.0_iphoneos-arm64.deb
+Size: 5164
+MD5sum: 5d1b81708a5115e42cb93c73eee55cb7
+SHA1: aef89060e21023a1c47bf06632df5d653dfcce1a
+SHA256: 083f07436c7ec71653288ccbec7d54274d18d91d7374e9382e4a9a9e473a1cd1
+Section: Tweaks
+Description: Enables portrait & landscape rotate, orientation lock everywhere (HomeScreen, LockScreen & most apps) !
+Author: uz.ra
+Icon: https://media.discordapp.net/attachments/813615730473304064/1117706654348234793/0C38DA11-4CF0-434E-A5DC-A7344C7F96F9.png
+Name: Cluri
+
 Package: jp.uzra.medousa
 Version: 1.1
 Architecture: iphoneos-arm64
@@ -64,5 +115,22 @@ Section: Tweaks
 Description: Enable "medusa" feature, generally known as iPad multi tasking feature, on ur iPhone!
 Author: uz.ra
 Icon: https://cdn.discordapp.com/attachments/813615730473304064/1127445655615451337/Medusa.jpg
+Name: medousa
+
+Package: jp.uzra.medousa
+Version: 1.2
+Architecture: iphoneos-arm
+Maintainer: uz.ra
+Installed-Size: 188
+Depends: mobilesubstrate (>= 0.9.5000)
+Filename: ./debs/jp.uzra.medousa_1.2_iphoneos-arm.deb
+Size: 5352
+MD5sum: e0baa2efb0b03ae9f32d89e6d37193a8
+SHA1: 40df5259b08edd20a76818ae83708aa4acb31972
+SHA256: 5072e4338ab11ae451ed4851aad66680634d5ad63d1146077bd382c895573dfa
+Section: Tweaks
+Description: Enable "medusa" feature, generally known as iPad multi tasking feature, on ur iPhone!
+Author: uz.ra
+Icon: https://cdn.discordapp.com/attachments/813615730473304064/1127445074029064243/Medusa.jpg
 Name: medousa
 
