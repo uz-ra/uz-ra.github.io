@@ -11,11 +11,7 @@
                 {
                     "class": "DepictionScreenshotsView",
                     "screenshots": [
-                       //{
-                       // "url": "https://video.twimg.com/ext_tw_video/1734413157672833024/pu/vid/avc1/592x1280/G2pOFW1bDm5VASSs.mp4?tag=12",
-                        //"accessibilityText": "screeenshots",
-                       // "video": true
-                       // },
+                       
                         {
                         "url": "https://pbs.twimg.com/media/GBCKWPxbEAAAe3z?format=jpg&name=large",
                         "accessibilityText": "screeenshots"
