@@ -2,7 +2,7 @@
     "minVersion": "0.1",
     "class": "DepictionTabView",
     "tintColor": "#32C759",
-    "headerImage": "https://pbs.twimg.com/profile_banners/1630248958605017088/1679981621/1500x500",
+    "headerImage": "https://raw.githubusercontent.com/hanabiADHD/nbxyRepo/main/DefaultHeaderImage.jpg",
     "tabs": [
         {
             "tabname": "Details",
