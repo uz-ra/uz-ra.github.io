@@ -78,6 +78,28 @@
                         }
                     ]
                 },
+                {
+                    "class": "DepictionSpacerView",
+                    "spacing": 16
+                }
+            ]
+        },
+        
+        {
+            "tabname": "Change Log",
+            "class": "DepictionStackView",
+            "tintColor": "#32C759",
+            "views": [
+                {
+                    "class": "DepictionSubheaderView",
+                    "useBoldText": true,
+                    "useBottomMargin": false,
+                    "title": "1.0"
+                },
+                {
+                    "class": "DepictionMarkdownView",
+                    "markdown": "Initial release"
+                }
 ]
         }
     ]
