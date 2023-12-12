@@ -21,22 +21,7 @@
                     "height": 1280,
                     "cornerRadius": 10,
                 },
-                /*
-                {
-                    "class": "DepictionImageView",
-                    "URL": "https://pbs.twimg.com/media/GBCKWPxbEAAAe3z?format=jpg&name=large",
-                    "width": 946,
-                    "height": 2048,
-                    "cornerRadius": 10,
-                },
-                {
-                    "class": "DepictionImageView",
-                    "URL": "https://pbs.twimg.com/media/GBKJxGAbsAAS34e?format=jpg&name=large",
-                    "width": 946,
-                    "height": 2048,
-                    "cornerRadius": 10,
-                },
-                */
+                
                     
                 {
                     "class": "DepictionMarkdownView",
