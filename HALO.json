@@ -9,6 +9,26 @@
             "class": "DepictionStackView",
             "views": [
                 {
+                    "class": "DepictionScreenshotsView",
+                    "screenshots": [
+                        
+                        {
+                        "url": "https://pbs.twimg.com/media/GBCKWPxbEAAAe3z?format=jpg&name=large",
+                        "accessibilityText": "screeenshots",
+                         "fullSizeURL": "https://pbs.twimg.com/media/GBCKWPxbEAAAe3z?format=jpg&name=large"
+                        },
+                        {
+                        "url": "https://pbs.twimg.com/media/GBKJxGAbsAAS34e?format=jpg&name=large",
+                        "accessibilityText": "screeenshots",
+                         "fullSizeURL": "https://pbs.twimg.com/media/GBKJxGAbsAAS34e?format=jpg&name=large"
+                        }
+                        ],
+                    "itemCornerRadius": 10,
+                    "itemSize": "{946,2048}"
+                    
+                    
+                },
+                {
                     "class": "DepictionSubheaderView",
                     "useBoldText": true,
                     "useBottomMargin": true,
