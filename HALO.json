@@ -16,7 +16,9 @@
                          "https://pbs.twimg.com/media/GBKJxGAbsAAS34e?format=jpg&name=large"
                         ],
                     "itemSize": {592,1280},
-                    "itemCornerRadius": 10
+                    "itemCornerRadius": 10,
+                    "url": "https://pbs.twimg.com/media/GBCKWPxbEAAAe3z?format=jpg&name=large",
+                    "accessibilityText": "screeenshots"
                 },
                 
                 
