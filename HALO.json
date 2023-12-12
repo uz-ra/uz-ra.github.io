@@ -35,10 +35,7 @@
                     "height": 2048,
                     "cornerRadius": 10,
                 },
-                    "width": 946,
-                    "height": 2048,
-                    "cornerRadius": 10,
-                },
+                    
                 {
                     "class": "DepictionMarkdownView",
                     "markdown": "HALO is iOS16 inspired LockScreen music player tweak made based on Printemps by @tako3s.\n\nPursued a design that minimizes waste as much as possible."
