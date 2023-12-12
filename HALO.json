@@ -30,13 +30,11 @@
                 },
                 {
                     "class": "DepictionImageView",
-                    "URL": "{
-                    "class": "DepictionImageView",
                     "URL": "https://pbs.twimg.com/media/GBKJxGAbsAAS34e?format=jpg&name=large",
                     "width": 946,
                     "height": 2048,
                     "cornerRadius": 10,
-                },",
+                },
                     "width": 946,
                     "height": 2048,
                     "cornerRadius": 10,
