@@ -21,6 +21,7 @@
                     "height": 1280,
                     "cornerRadius": 10,
                 },
+                /*
                 {
                     "class": "DepictionImageView",
                     "URL": "https://pbs.twimg.com/media/GBCKWPxbEAAAe3z?format=jpg&name=large",
@@ -35,6 +36,7 @@
                     "height": 2048,
                     "cornerRadius": 10,
                 },
+                */
                     
                 {
                     "class": "DepictionMarkdownView",
