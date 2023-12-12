@@ -8,6 +8,16 @@
             "tabname": "Details",
             "class": "DepictionStackView",
             "views": [
+                
+                
+                
+                    
+                {
+                    "class": "DepictionSubheaderView",
+                    "useBoldText": true,
+                    "useBottomMargin": true,
+                    "title": "Description"
+                },
                 {
                     "class": "DepictionScreenshotsView",
                     "screenshots": [
@@ -28,16 +38,6 @@
                     
                     
                 },
-                
-                
-                    
-                {
-                    "class": "DepictionSubheaderView",
-                    "useBoldText": true,
-                    "useBottomMargin": true,
-                    "title": "Description"
-                },
-                
                 {
                     "class": "DepictionMarkdownView",
                     "markdown": "HALO is iOS16 inspired LockScreen music player tweak made based on Printemps by @tako3s.\n\nPursued a design that minimizes waste as much as possible."
