@@ -25,8 +25,9 @@
                         "accessibilityText": "screeenshots"
                         }
                         ],
-                    "itemSize": {592,1280},
-                    "itemCornerRadius": 10
+                    "itemCornerRadius": 10,
+                    "itemSize": {592,1280}
+                    
                     
                 },
                 
