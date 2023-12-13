@@ -134,6 +134,16 @@
                 {
                     "class": "DepictionMarkdownView",
                     "markdown": "Initial release"
+                },
+                {
+                    "class": "DepictionSubheaderView",
+                    "useBoldText": true,
+                    "useBottomMargin": false,
+                    "title": "1.1"
+                },
+                {
+                    "class": "DepictionMarkdownView",
+                    "markdown": "-Fixed oldabi issue\n\n-Supported iPad"
                 }
 ]
         }
