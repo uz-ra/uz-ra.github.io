@@ -90,7 +90,7 @@
                 {
                     "class": "DepictionTableTextView",
                     "title": "Compatibility",
-                    "text": "iOS 15.0 and higher"
+                    "text": "iOS 15.0 - 15.4.1"
                 },
                 {
                     "class": "DepictionSpacerView",
