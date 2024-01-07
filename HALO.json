@@ -2,7 +2,7 @@
     "minVersion": "0.1",
     "class": "DepictionTabView",
     "tintColor": "#32C759",
-    "headerImage": "https://raw.githubusercontent.com/hanabiADHD/nbxyRepo/main/DefaultHeaderImage.jpg",
+    "headerImage": "https://media.discordapp.net/attachments/1191371114769821786/1193568963423109220/banner_notext.png?ex=65ad30b8&is=659abbb8&hm=d25e53b9d595a63cb95d9a37a882b2e4c66a90d29ab192aa4fa0807f1ddf9fab&",
     "tabs": [
         {
             "tabname": "Details",
