@@ -1,0 +1,77 @@
+body {
+    font-family: sans-serif;
+    margin: 20px;
+    background-color: #f8f8f8;
+    color: #333;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+#lens-comparison-container {
+    display: grid;
+    /* 最初の列は項目名、それ以降はレンズの数に合わせて動的に列を増やす */
+    grid-template-columns: auto repeat(var(--lens-count, 1), 1fr); /* --lens-countはJSで設定 */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow-x: auto; /* レンズが増えたら横スクロール */
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.header-row, .data-row {
+    display: contents; /* グリッドアイテムを子要素に適用させる */
+}
+
+.header-cell, .data-cell {
+    padding: 15px 10px;
+    border-bottom: 1px solid #eee;
+    border-right: 1px solid #eee;
+    text-align: center;
+    white-space: nowrap; /* テキストの折り返しを防ぐ */
+}
+
+.header-cell {
+    font-weight: bold;
+    background-color: #eee;
+    position: sticky; /* 項目名を固定したい場合に */
+    left: 0; /* 項目名を左に固定 */
+    z-index: 10;
+}
+
+.data-cell:first-child { /* 各行の最初のセル（項目名） */
+    font-weight: bold;
+    text-align: left;
+    background-color: #f9f9f9;
+    position: sticky; /* 項目名を固定したい場合に */
+    left: 0; /* 項目名を左に固定 */
+    z-index: 5;
+}
+
+.data-cell:last-child, .header-cell:last-child {
+    border-right: none;
+}
+
+.data-row:last-child .data-cell {
+    border-bottom: none;
+}
+
+.lens-image {
+    max-width: 100px; /* 画像サイズ調整 */
+    height: auto;
+    display: block;
+    margin: 0 auto 10px auto;
+}
+
+.lens-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* レスポンシブ対応 (例: 縦に並べる場合など、必要に応じて) */
+@media (max-width: 768px) {
+    /* 比較形式を大きく変える場合は、JavaScriptで表示を切り替える必要もある */
+    /* 例えば、カード形式で横に並べるなど */
+}
