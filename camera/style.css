@@ -1,25 +1,116 @@
 body {
-    font-family: sans-serif;
-    margin: 20px;
-    background-color: #f8f8f8;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f2f5;
     color: #333;
+    line-height: 1.6;
 }
 
 h1 {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
+    color: #2c3e50;
+    font-size: 2.5em;
 }
 
+/* --- 絞り込み・比較コントロール --- */
+.controls-container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 30px;
+    display: flex; /* 横並びにする */
+    flex-wrap: wrap; /* 折り返しを許可 */
+    gap: 20px; /* 要素間のスペース */
+    justify-content: center;
+    align-items: flex-end; /* 下揃え */
+}
+
+.filter-group, .compare-selection-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* 左揃え */
+}
+
+label {
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+    font-size: 0.95em;
+}
+
+select, button {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    background-color: #f9f9f9;
+    color: #333;
+    transition: all 0.2s ease-in-out;
+    min-width: 150px; /* 最小幅 */
+}
+
+select:focus, button:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+#compare-button {
+    background-color: #28a745;
+}
+#compare-button:hover {
+    background-color: #218838;
+}
+
+#reset-button {
+    background-color: #dc3545;
+}
+#reset-button:hover {
+    background-color: #c82333;
+}
+
+/* 比較選択の複数選択リスト */
+#compare-lens-select {
+    min-height: 100px; /* 高さの確保 */
+    max-height: 200px; /* スクロール可能にする */
+    overflow-y: auto;
+    width: 100%; /* 親要素に合わせる */
+}
+
+/* --- 比較テーブル --- */
 #lens-comparison-container {
     display: grid;
     /* 最初の列は項目名、それ以降はレンズの数に合わせて動的に列を増やす */
-    grid-template-columns: auto repeat(var(--lens-count, 1), 1fr); /* --lens-countはJSで設定 */
+    grid-template-columns: var(--fixed-column-width, 200px) repeat(var(--lens-count, 1), minmax(250px, 1fr)); 
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow-x: auto; /* レンズが増えたら横スクロール */
     background-color: #fff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    white-space: nowrap; /* セル内のテキスト折り返しは基本しない */
 }
+
+/* JavaScriptで固定列の幅を動的に設定する例 (必要であれば) */
+/* .fixed-column {
+    width: var(--fixed-column-width, 200px); 
+} */
+
 
 .header-row, .data-row {
     display: contents; /* グリッドアイテムを子要素に適用させる */
@@ -30,26 +121,34 @@ h1 {
     border-bottom: 1px solid #eee;
     border-right: 1px solid #eee;
     text-align: center;
-    white-space: nowrap; /* テキストの折り返しを防ぐ */
+    overflow: hidden; /* テキストがはみ出したら隠す */
+    text-overflow: ellipsis; /* 省略記号を表示 */
+    box-sizing: border-box; /* paddingとborderを幅に含める */
 }
 
+/* ヘッダー行と項目列のスタイル */
 .header-cell {
     font-weight: bold;
-    background-color: #eee;
-    position: sticky; /* 項目名を固定したい場合に */
-    left: 0; /* 項目名を左に固定 */
-    z-index: 10;
+    background-color: #e9ecef; /* 少し濃い色 */
+    padding: 15px 10px;
+    color: #333;
 }
 
-.data-cell:first-child { /* 各行の最初のセル（項目名） */
+.data-cell:first-child, .header-cell.fixed-column { 
     font-weight: bold;
     text-align: left;
-    background-color: #f9f9f9;
-    position: sticky; /* 項目名を固定したい場合に */
-    left: 0; /* 項目名を左に固定 */
+    background-color: #f8f9fa; /* 項目列の背景色 */
+    position: sticky; /* 項目名を左に固定 */
+    left: 0; 
     z-index: 5;
+    min-width: var(--fixed-column-width, 200px); /* 項目列の最小幅 */
 }
 
+.header-cell.fixed-column {
+    z-index: 10; /* ヘッダー項目はデータ項目より手前に */
+}
+
+/* 罫線の調整 */
 .data-cell:last-child, .header-cell:last-child {
     border-right: none;
 }
@@ -59,19 +158,160 @@ h1 {
 }
 
 .lens-image {
-    max-width: 100px; /* 画像サイズ調整 */
+    max-width: 80px; /* 画像サイズ調整 */
+    max-height: 80px;
     height: auto;
     display: block;
     margin: 0 auto 10px auto;
+    object-fit: contain; /* 画像が歪まないように */
 }
 
 .lens-name {
     font-weight: bold;
     margin-bottom: 5px;
+    font-size: 1.1em;
+    white-space: normal; /* レンズ名は折り返す */
+    max-height: 3.2em; /* 2行分 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* 2行で切り詰める */
+    -webkit-box-orient: vertical;
 }
 
-/* レスポンシブ対応 (例: 縦に並べる場合など、必要に応じて) */
+.product-link {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 5px 10px;
+    background-color: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.85em;
+    transition: background-color 0.2s ease;
+}
+
+.product-link:hover {
+    background-color: #5a6268;
+}
+
+/* --- レスポンシブデザイン --- */
 @media (max-width: 768px) {
-    /* 比較形式を大きく変える場合は、JavaScriptで表示を切り替える必要もある */
-    /* 例えば、カード形式で横に並べるなど */
+    body {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 2em;
+        margin-bottom: 20px;
+    }
+
+    .controls-container {
+        flex-direction: column; /* 縦に並べる */
+        align-items: stretch; /* 幅いっぱいに広げる */
+        gap: 15px;
+        padding: 15px;
+    }
+
+    .filter-group, .compare-selection-group {
+        width: 100%; /* 親要素の幅いっぱいに */
+    }
+
+    select, button {
+        width: 100%; /* 幅いっぱいに */
+        min-width: unset; /* 最小幅を解除 */
+    }
+
+    .compare-selection-group button {
+        margin-top: 5px; /* ボタン間のスペース */
+    }
+
+    /* 比較テーブルのスマホ対応 */
+    #lens-comparison-container {
+        /* グリッドを一旦リセットしてカード形式にする */
+        display: block; 
+        border: none;
+        box-shadow: none;
+        background-color: transparent;
+    }
+
+    .header-row {
+        display: none; /* スマホではヘッダー行は表示しない */
+    }
+
+    .data-row {
+        display: block; /* 各レンズを独立したカードとして表示 */
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 15px; /* カード間のスペース */
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        overflow: hidden;
+        white-space: normal; /* カード内はテキストを折り返す */
+    }
+    
+    .data-cell, .header-cell {
+        display: flex; /* 各セルをFlexboxアイテムとして扱う */
+        justify-content: space-between; /* 項目名と値を左右に配置 */
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        border-right: none; /* 縦方向の線は不要 */
+        text-align: left;
+    }
+
+    .data-cell:last-child {
+        border-bottom: none; /* カードの最後のセルは下線なし */
+    }
+
+    /* 項目名（左側）と値（右側）のスタイル調整 */
+    .data-cell:first-child { /* 項目名セル */
+        background-color: #f0f2f5; /* 背景色を変えて項目を強調 */
+        font-weight: bold;
+        color: #444;
+        position: static; /* stickyを解除 */
+        min-width: unset;
+        width: 100%;
+        display: block; /* 項目名は単独で */
+    }
+
+    /* 項目名の値側のスタイル調整 */
+    .data-cell:not(:first-child) { /* データセル */
+        font-weight: normal;
+        background-color: #fff;
+    }
+
+    /* 項目のラベルと値を分ける */
+    .data-cell::before {
+        content: attr(data-label); /* data-label属性を疑似要素として表示 */
+        font-weight: bold;
+        margin-right: 10px;
+        color: #666;
+        min-width: 90px; /* ラベルの幅をある程度確保 */
+    }
+
+    /* ヘッダー部分のレンズ情報 */
+    .header-cell {
+        display: block; /* 縦に並べる */
+        background-color: #e9ecef;
+        text-align: center;
+        padding: 15px;
+        position: static; /* stickyを解除 */
+        min-width: unset;
+    }
+    .header-cell .lens-image {
+        max-width: 100px;
+        margin-bottom: 15px;
+    }
+    .header-cell .lens-name {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+    }
+    .header-cell .product-link {
+        width: fit-content; /* ボタンの幅をコンテンツに合わせる */
+        margin: 10px auto 0 auto; /* 中央揃え */
+    }
+
+    /* スマホでは「項目」を固定する代わりに、各項目名をデータセルに含める */
+    /* JavaScriptでdata-label属性を追加する */
 }

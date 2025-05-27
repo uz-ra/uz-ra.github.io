@@ -8,11 +8,35 @@
 </head>
 <body>
     <h1>カメラレンズ比較</h1>
+
+    <div class="controls-container">
+        <div class="filter-group">
+            <label for="mount-filter">マウントで絞り込む:</label>
+            <select id="mount-filter">
+                <option value="">すべて</option>
+                </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="focal-length-filter">焦点距離で絞り込む:</label>
+            <select id="focal-length-filter">
+                <option value="">すべて</option>
+                </select>
+        </div>
+
+        <div class="compare-selection-group">
+            <label for="compare-lens-select">比較するレンズを選択 (複数選択可):</label>
+            <select id="compare-lens-select" multiple size="5">
+                </select>
+            <button id="compare-button">比較を表示</button>
+            <button id="reset-button">リセット</button>
+        </div>
+    </div>
+
     <div id="lens-comparison-container">
         <div class="header-row">
-            <div class="header-cell">項目</div>
-            </div>
-        </div>
+            <div class="header-cell fixed-column">項目</div> </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
