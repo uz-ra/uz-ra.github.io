@@ -1,1 +1,149 @@
-<!doctype html><meta charset="utf-8"><title>Penelope Caption Studio</title><p>Publishing…</p>
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="写真展のキャプションをCSVから編集し、A4印刷用レイアウトを作成します。" />
+    <title>Penelope Caption Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=Shippori+Mincho:wght@500;600&amp;display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23151817'/%3E%3Cpath d='M17 17h30v30H17z' fill='none' stroke='%23ff99d4' stroke-width='4'/%3E%3Cpath d='M23 39l8-14 10 14' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <a class="brand" href="#" aria-label="Penelope Caption Studio ホーム">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span><b>Penelope</b><small>Caption Studio</small></span>
+      </a>
+      <div class="header-status" id="privacyStatus">
+        <span class="shield" aria-hidden="true">◆</span>
+        CSVはブラウザ内だけで処理されます
+      </div>
+      <div class="header-actions">
+        <button class="button ghost" type="button" id="downloadCsvButton" disabled>CSVを書き出す</button>
+        <button class="button primary" type="button" id="printButton" disabled>PDF / 印刷</button>
+      </div>
+    </header>
+
+    <main class="workspace" id="workspace">
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <div>
+            <p class="eyebrow">作品データ</p>
+            <h1>キャプションを整える</h1>
+          </div>
+          <label class="icon-button" title="CSVを追加で読み込む">
+            <input id="fileInputCompact" type="file" accept=".csv,text/csv" hidden />
+            <span aria-hidden="true">＋</span><span class="sr-only">CSVを追加で読み込む</span>
+          </label>
+        </div>
+
+        <div class="stats" aria-label="読み込み状況">
+          <div><strong id="workCount">0</strong><span>作品</span></div>
+          <div><strong id="pageCount">0</strong><span>ページ</span></div>
+          <div><strong id="issueCount">0</strong><span>要確認</span></div>
+        </div>
+
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="searchInput" type="search" placeholder="作品名・作者名で検索" autocomplete="off" />
+        </label>
+
+        <div class="work-list" id="workList" aria-live="polite"></div>
+      </aside>
+
+      <section class="stage">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-visual" aria-hidden="true">
+            <div class="paper paper-back"></div>
+            <div class="paper paper-front"><span></span><span></span><span></span></div>
+          </div>
+          <p class="eyebrow">READY FOR YOUR EXHIBITION</p>
+          <h2>CSVから、印刷できる<br />キャプションへ。</h2>
+          <p class="empty-copy">Googleフォームから書き出したCSVを選ぶと、6作品ずつA4横に自動配置します。</p>
+          <label class="button primary file-button">
+            <input id="fileInput" type="file" accept=".csv,text/csv" hidden />
+            CSVを選ぶ
+          </label>
+          <span class="drop-hint">または、ここにCSVをドロップ</span>
+        </div>
+
+        <div class="loaded-view" id="loadedView" hidden>
+          <div class="stage-toolbar">
+            <div>
+              <p class="eyebrow">PRINT PREVIEW</p>
+              <h2 id="previewTitle">全ページ</h2>
+            </div>
+            <div class="toolbar-controls">
+              <label class="select-wrap">表示
+                <select id="pageSelect" aria-label="プレビューするページ"></select>
+              </label>
+              <button class="button settings-button" type="button" id="typographyButton" aria-expanded="false" aria-controls="typographyPanel">文字設定</button>
+              <button class="button ghost compact" type="button" id="fitButton">全体表示</button>
+            </div>
+            <div class="typography-panel" id="typographyPanel" hidden>
+              <div class="panel-heading">
+                <div><p class="eyebrow">TYPE SETTINGS</p><h3>文字とリンク</h3></div>
+                <button class="text-button" type="button" id="resetTypographyButton">初期値に戻す</button>
+              </div>
+              <label class="range-field"><span>作品タイトル <output data-output="title">100%</output></span><input type="range" min="70" max="150" step="5" value="100" data-font-size="title" /></label>
+              <label class="range-field"><span>所属・作者 <output data-output="person">100%</output></span><input type="range" min="70" max="150" step="5" value="100" data-font-size="person" /></label>
+              <label class="range-field"><span>キャプション <output data-output="caption">100%</output></span><input type="range" min="70" max="150" step="5" value="100" data-font-size="caption" /></label>
+              <label class="range-field"><span>撮影情報 <output data-output="tech">100%</output></span><input type="range" min="70" max="150" step="5" value="100" data-font-size="tech" /></label>
+              <label class="toggle-field">
+                <span><b>QRリンクのクエリを削除</b><small>「?」以降の追跡情報を除いてQRコードを作ります</small></span>
+                <input type="checkbox" id="stripQueryToggle" /><i aria-hidden="true"></i>
+              </label>
+            </div>
+          </div>
+          <div class="preview-scroll" id="previewScroll">
+            <div class="pages" id="pages"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="inspector" id="inspector" hidden>
+        <div class="inspector-head">
+          <div>
+            <p class="eyebrow">SELECTED WORK</p>
+            <h2 id="selectedIndex">作品 01</h2>
+          </div>
+          <div class="move-actions">
+            <button class="icon-button small" type="button" id="moveUpButton" title="前へ移動">↑</button>
+            <button class="icon-button small" type="button" id="moveDownButton" title="後ろへ移動">↓</button>
+          </div>
+        </div>
+        <form id="editorForm" autocomplete="off">
+          <label class="field wide"><span>作品タイトル <b>必須</b></span><input name="title" required /></label>
+          <div class="field-row">
+            <label class="field"><span>表記名</span><input name="author" /></label>
+            <label class="field"><span>学年</span><input name="grade" /></label>
+          </div>
+          <label class="field wide"><span>所属大学</span><input name="university" /></label>
+          <label class="field wide"><span>キャプション</span><textarea name="caption" rows="5"></textarea></label>
+          <label class="field wide"><span>撮影場所</span><input name="location" /></label>
+          <div class="field-row">
+            <label class="field"><span>カメラ</span><input name="camera" /></label>
+            <label class="field"><span>レンズ</span><input name="lens" /></label>
+          </div>
+          <div class="field-row three">
+            <label class="field"><span>SS</span><input name="shutter" /></label>
+            <label class="field"><span>絞り</span><input name="aperture" /></label>
+            <label class="field"><span>ISO</span><input name="iso" /></label>
+          </div>
+          <label class="field wide"><span>SNSリンク（QR）</span><input name="sns" type="url" inputmode="url" /></label>
+        </form>
+        <div class="inspector-footer">
+          <button class="text-button danger" type="button" id="deleteButton">この作品を削除</button>
+          <span id="saveStatus">自動保存</span>
+        </div>
+      </aside>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./qrcode.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
