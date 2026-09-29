@@ -21,6 +21,7 @@
     "表示する名前 / Written name",
     "表示する名前"
   ];
+  const DEFAULT_TYPOGRAPHY = { title: 100, person: 100, caption: 100, tech: 100 };
 
   const state = {
     headers: [],
@@ -29,7 +30,7 @@
     query: "",
     page: "all",
     fit: false,
-    typography: { title: 100, person: 100, caption: 100, tech: 100 },
+    typography: { ...DEFAULT_TYPOGRAPHY },
     stripQuery: false,
     filename: "penelope-captions.csv"
   };
@@ -90,18 +91,20 @@
     els.typographyButton.setAttribute("aria-expanded", String(willOpen));
   });
   els.resetTypographyButton.addEventListener("click", () => {
-    state.typography = { title: 100, person: 100, caption: 100, tech: 100 };
+    const row = state.rows[state.selected];
+    if (!row) return;
+    row.typography = { ...DEFAULT_TYPOGRAPHY };
     syncTypographyControls();
-    applyTypography();
-    savePreferences();
-    showToast("文字サイズを初期値に戻しました");
+    renderPages();
+    showToast("選択中の作品の文字サイズを初期値に戻しました");
   });
   els.typographyPanel.querySelectorAll("[data-font-size]").forEach((input) => {
     input.addEventListener("input", () => {
-      state.typography[input.dataset.fontSize] = Number(input.value);
+      const row = state.rows[state.selected];
+      if (!row) return;
+      row.typography[input.dataset.fontSize] = Number(input.value);
       syncTypographyControls();
-      applyTypography();
-      savePreferences();
+      renderPages();
     });
   });
   els.stripQueryToggle.addEventListener("change", () => {
@@ -193,7 +196,8 @@
       lens: clean(raw[FIELDS.lens]),
       shutter: clean(raw[FIELDS.shutter]),
       aperture: clean(raw[FIELDS.aperture]),
-      iso: clean(raw[FIELDS.iso])
+      iso: clean(raw[FIELDS.iso]),
+      typography: { ...DEFAULT_TYPOGRAPHY }
     };
   }
 
@@ -322,6 +326,7 @@
   function createCard(row, index) {
     const card = document.createElement("article");
     card.className = `caption-card${index === state.selected ? " selected" : ""}`;
+    applyTypography(card, row.typography);
     card.tabIndex = 0;
     card.setAttribute("aria-label", `${index + 1}. ${row.title}`);
     const choose = () => selectRow(index);
@@ -341,7 +346,8 @@
     affiliation.textContent = [row.university, row.grade].filter(Boolean).join(" ");
     const authorRow = document.createElement("div");
     authorRow.className = "author-row";
-    const author = document.createElement("b");
+    const author = document.createElement("span");
+    author.className = "author-name";
     author.textContent = row.author;
     authorRow.append(author);
     if (row.sns) {
@@ -427,16 +433,17 @@
   }
 
   function syncTypographyControls() {
+    const typography = state.rows[state.selected]?.typography || DEFAULT_TYPOGRAPHY;
     els.typographyPanel.querySelectorAll("[data-font-size]").forEach((input) => {
       const key = input.dataset.fontSize;
-      input.value = state.typography[key];
+      input.value = typography[key];
       const output = els.typographyPanel.querySelector(`[data-output="${key}"]`);
-      if (output) output.value = `${state.typography[key]}%`;
+      if (output) output.value = `${typography[key]}%`;
     });
     els.stripQueryToggle.checked = state.stripQuery;
   }
 
-  function applyTypography() {
+  function applyTypography(target = document.documentElement, typography = state.typography) {
     const definitions = {
       title: [10, 1.25, 20, 5],
       person: [6, .67, 10, 2.55],
@@ -444,9 +451,9 @@
       tech: [6, .67, 10, 2.55]
     };
     Object.entries(definitions).forEach(([key, [minimum, fluid, maximum, print]]) => {
-      const scale = state.typography[key] / 100;
-      document.documentElement.style.setProperty(`--${key}-font`, `clamp(${formatSize(minimum * scale)}px, ${formatSize(fluid * scale)}vw, ${formatSize(maximum * scale)}px)`);
-      document.documentElement.style.setProperty(`--print-${key}-font`, `${formatSize(print * scale)}mm`);
+      const scale = typography[key] / 100;
+      target.style.setProperty(`--${key}-font`, `clamp(${formatSize(minimum * scale)}px, ${formatSize(fluid * scale)}vw, ${formatSize(maximum * scale)}px)`);
+      target.style.setProperty(`--print-${key}-font`, `${formatSize(print * scale)}mm`);
     });
   }
 
@@ -485,6 +492,7 @@
     if (state.page !== "all" && Number(state.page) !== pageIndex) state.page = String(pageIndex);
     renderList();
     renderEditor();
+    syncTypographyControls();
     renderPages();
     document.querySelector(`.caption-card[aria-label^="${index + 1}."]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }

@@ -110,7 +110,7 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .card-primary { border-right: 1px solid #ededeb; }
 .card-title { margin: 0 0 20px; font: 600 var(--title-font)/1.35 var(--serif); overflow-wrap: anywhere; }
 .card-person { font-size: var(--person-font); line-height: 1.55; }
-.card-person b { font-weight: 600; }
+.author-name { font-weight: 400; }
 .author-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .qr-slot { width: clamp(26px, 3vw, 46px); aspect-ratio: 1; flex: 0 0 auto; }
 .qr-slot canvas, .qr-slot img { display: block; width: 100% !important; height: 100% !important; }
