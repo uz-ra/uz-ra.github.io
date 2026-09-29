@@ -128,7 +128,7 @@
     if (!input.name || !(input.name in FIELDS)) return;
     const row = state.rows[state.selected];
     row[input.name] = input.value;
-    const targetHeader = input.name === "author" ? findAuthorHeader(row.raw) : FIELDS[input.name];
+    const targetHeader = findFieldHeader(row.raw, input.name);
     row.raw[targetHeader] = input.value;
     renderStats();
     renderList();
@@ -157,7 +157,7 @@
       const table = parseCsv(text.replace(/^\uFEFF/, ""));
       if (table.length < 2) throw new Error("データ行がありません");
       const headers = table[0].map((header) => header.trim());
-      if (!headers.includes(FIELDS.title)) throw new Error(`「${FIELDS.title}」列が見つかりません`);
+      if (!findMatchingHeader(headers, [FIELDS.title])) throw new Error(`「${FIELDS.title}」列が見つかりません`);
       const rows = table.slice(1)
         .filter((cells) => cells.some((cell) => cell.trim()))
         .map((cells) => {
@@ -182,21 +182,21 @@
   }
 
   function normalizeRow(raw) {
-    const captionValue = clean(raw[FIELDS.caption]);
+    const captionValue = clean(readField(raw, "caption"));
     return {
       raw,
-      title: clean(raw[FIELDS.title]),
-      author: clean(raw[findAuthorHeader(raw)]) || clean(raw[FIELDS.fullName]),
-      university: shortBilingual(raw[FIELDS.university]),
-      grade: shortBilingual(raw[FIELDS.grade]),
+      title: clean(readField(raw, "title")),
+      author: clean(raw[findAuthorHeader(raw)]) || clean(readField(raw, "fullName")),
+      university: shortBilingual(readField(raw, "university")),
+      grade: shortBilingual(readField(raw, "grade")),
       caption: /^(キャプション無し|キャプションなし|-|なし|無し)$/i.test(captionValue) ? "" : captionValue,
-      sns: clean(raw[FIELDS.sns]),
-      location: clean(raw[FIELDS.location]),
-      camera: clean(raw[FIELDS.camera]),
-      lens: clean(raw[FIELDS.lens]),
-      shutter: clean(raw[FIELDS.shutter]),
-      aperture: clean(raw[FIELDS.aperture]),
-      iso: clean(raw[FIELDS.iso]),
+      sns: clean(readField(raw, "sns")),
+      location: clean(readField(raw, "location")),
+      camera: clean(readField(raw, "camera")),
+      lens: clean(readField(raw, "lens")),
+      shutter: clean(readField(raw, "shutter")),
+      aperture: clean(readField(raw, "aperture")),
+      iso: clean(readField(raw, "iso")),
       typography: { ...DEFAULT_TYPOGRAPHY }
     };
   }
@@ -210,7 +210,25 @@
   }
 
   function findAuthorHeader(raw) {
-    return AUTHOR_HEADERS.find((header) => Object.prototype.hasOwnProperty.call(raw, header)) || FIELDS.author;
+    return findMatchingHeader(Object.keys(raw), AUTHOR_HEADERS) || FIELDS.author;
+  }
+
+  function findFieldHeader(raw, key) {
+    if (key === "author") return findAuthorHeader(raw);
+    return findMatchingHeader(Object.keys(raw), [FIELDS[key]]) || FIELDS[key];
+  }
+
+  function readField(raw, key) {
+    return raw[findFieldHeader(raw, key)];
+  }
+
+  function findMatchingHeader(headers, candidates) {
+    const normalizedCandidates = candidates.map(normalizeHeader);
+    return headers.find((header) => normalizedCandidates.includes(normalizeHeader(header)));
+  }
+
+  function normalizeHeader(header) {
+    return clean(header).replace(/\s+/g, "");
   }
 
   function activateWorkspace() {
@@ -522,7 +540,7 @@
   function downloadCsv() {
     state.rows.forEach((row) => {
       Object.entries(FIELDS).forEach(([key, header]) => {
-        const targetHeader = key === "author" ? findAuthorHeader(row.raw) : header;
+        const targetHeader = findFieldHeader(row.raw, key);
         if (key !== "fullName" && targetHeader in row.raw) row.raw[targetHeader] = row[key] ?? "";
       });
     });
