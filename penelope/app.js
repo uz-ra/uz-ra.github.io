@@ -16,6 +16,11 @@
     aperture: "絞り値 / Aperture",
     iso: "ISO感度（使用フィルム） / ISO(Film name)"
   };
+  const AUTHOR_HEADERS = [
+    FIELDS.author,
+    "表示する名前 / Written name",
+    "表示する名前"
+  ];
 
   const state = {
     headers: [],
@@ -120,7 +125,8 @@
     if (!input.name || !(input.name in FIELDS)) return;
     const row = state.rows[state.selected];
     row[input.name] = input.value;
-    row.raw[FIELDS[input.name]] = input.value;
+    const targetHeader = input.name === "author" ? findAuthorHeader(row.raw) : FIELDS[input.name];
+    row.raw[targetHeader] = input.value;
     renderStats();
     renderList();
     renderPages();
@@ -177,7 +183,7 @@
     return {
       raw,
       title: clean(raw[FIELDS.title]),
-      author: clean(raw[FIELDS.author]) || clean(raw[FIELDS.fullName]),
+      author: clean(raw[findAuthorHeader(raw)]) || clean(raw[FIELDS.fullName]),
       university: shortBilingual(raw[FIELDS.university]),
       grade: shortBilingual(raw[FIELDS.grade]),
       caption: /^(キャプション無し|キャプションなし|-|なし|無し)$/i.test(captionValue) ? "" : captionValue,
@@ -197,6 +203,10 @@
 
   function shortBilingual(value) {
     return clean(value).split(" / ")[0];
+  }
+
+  function findAuthorHeader(raw) {
+    return AUTHOR_HEADERS.find((header) => Object.prototype.hasOwnProperty.call(raw, header)) || FIELDS.author;
   }
 
   function activateWorkspace() {
@@ -504,7 +514,8 @@
   function downloadCsv() {
     state.rows.forEach((row) => {
       Object.entries(FIELDS).forEach(([key, header]) => {
-        if (key !== "fullName" && header in row.raw) row.raw[header] = row[key] ?? "";
+        const targetHeader = key === "author" ? findAuthorHeader(row.raw) : header;
+        if (key !== "fullName" && targetHeader in row.raw) row.raw[targetHeader] = row[key] ?? "";
       });
     });
     const lines = [state.headers, ...state.rows.map((row) => state.headers.map((header) => row.raw[header] ?? ""))];
