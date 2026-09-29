@@ -163,9 +163,8 @@
         .map((cells) => {
           const raw = Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ""]));
           return normalizeRow(raw);
-        })
-        .filter((row) => row.title);
-      if (!rows.length) throw new Error("作品タイトルが入った行がありません");
+        });
+      if (!rows.length) throw new Error("作品データが入った行がありません");
       state.headers = headers;
       state.rows = rows;
       state.selected = 0;
@@ -346,7 +345,7 @@
     card.className = `caption-card${index === state.selected ? " selected" : ""}`;
     applyTypography(card, row.typography);
     card.tabIndex = 0;
-    card.setAttribute("aria-label", `${index + 1}. ${row.title}`);
+    card.setAttribute("aria-label", `${index + 1}. ${row.title || "タイトル未入力"}`);
     const choose = () => selectRow(index);
     card.addEventListener("click", choose);
     card.addEventListener("keydown", (event) => {
@@ -357,7 +356,7 @@
     primary.className = "card-primary";
     const title = document.createElement("h3");
     title.className = "card-title";
-    title.textContent = row.title;
+    title.textContent = row.title || "タイトル未入力";
     const person = document.createElement("div");
     person.className = "card-person";
     const affiliation = document.createElement("div");
