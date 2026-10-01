@@ -117,7 +117,7 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .card-caption { margin: 14px 0 0; padding-top: 13px; border-top: 1px solid #373a38; font: 500 var(--caption-font)/1.65 var(--serif); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .card-tech { align-items: center; text-align: center; gap: 11px; font-size: var(--tech-font); line-height: 1.45; }
 .card-tech .location { margin-bottom: 6px; font-weight: 600; }
-.card-tech .lens { color: #4f544f; font-size: .9em; }
+.card-tech .lens { color: var(--ink); font-size: .9em; }
 .settings { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 9px; }
 .settings span + span::before { content: "|"; margin-right: 9px; color: #b0b3af; }
 .blank-card { background: #fcfcfa; }
@@ -126,6 +126,10 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .panel-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .panel-heading h3 { margin: 0; font-size: 16px; }
 .panel-heading .text-button { color: var(--muted); }
+.scope-field { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 12px; margin: -2px 0 17px; padding: 11px 12px; background: #f4f5f1; border: 1px solid var(--line); }
+.scope-field > span { color: #4e544f; font-size: 11px; font-weight: 700; }
+.scope-field select { min-width: 0; height: 32px; padding: 0 8px; border: 1px solid #cdd2cc; background: white; color: var(--ink); font-size: 12px; }
+.scope-field small { grid-column: 2; color: var(--muted); font-size: 9px; line-height: 1.4; }
 .range-field { display: block; margin: 0 0 14px; }
 .range-field > span { display: flex; justify-content: space-between; margin-bottom: 7px; color: #4e544f; font-size: 12px; font-weight: 600; }
 .range-field output { color: #7a807b; font-variant-numeric: tabular-nums; }

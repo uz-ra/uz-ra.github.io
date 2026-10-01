@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=Shippori+Mincho:wght@500;600&amp;display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23151817'/%3E%3Cpath d='M17 17h30v30H17z' fill='none' stroke='%23ff99d4' stroke-width='4'/%3E%3Cpath d='M23 39l8-14 10 14' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=20261001-2" />
+    <link rel="stylesheet" href="./styles.css?v=20261001-4" />
   </head>
   <body>
     <header class="app-header">
@@ -85,9 +85,10 @@
             </div>
             <div class="typography-panel" id="typographyPanel" hidden>
               <div class="panel-heading">
-                <div><p class="eyebrow">SELECTED WORK</p><h3>選択中の作品の文字設定</h3></div>
+                <div><p class="eyebrow">TYPE SETTINGS</p><h3 id="typographyHeading">選択中の作品の文字設定</h3></div>
                 <button class="text-button" type="button" id="resetTypographyButton">この作品を初期値に戻す</button>
               </div>
+              <label class="scope-field"><span>変更対象</span><select id="typographyScopeSelect"><option value="selected">選択中の作品</option><option value="all">全作品を一括変更</option></select><small id="typographyScopeHint">現在選択している作品だけを変更します</small></label>
               <label class="range-field"><span>作品タイトル <output data-output="title">100%</output></span><input type="range" min="70" max="150" step="5" value="100" data-font-size="title" /></label>
               <label class="range-field"><span>所属・作者 <output data-output="person">100%</output></span><input type="range" min="70" max="150" step="5" value="100" data-font-size="person" /></label>
               <label class="range-field"><span>キャプション <output data-output="caption">100%</output></span><input type="range" min="70" max="150" step="5" value="100" data-font-size="caption" /></label>
@@ -162,6 +163,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./qrcode.min.js"></script>
-    <script src="./app.js?v=20261001-2"></script>
+    <script src="./app.js?v=20261001-4"></script>
   </body>
 </html>

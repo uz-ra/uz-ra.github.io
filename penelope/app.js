@@ -56,7 +56,8 @@
     "pageCount", "issueCount", "searchInput", "pages", "pageSelect", "previewTitle",
     "editorForm", "selectedIndex", "moveUpButton", "moveDownButton", "deleteButton",
     "downloadCsvButton", "printButton", "fitButton", "previewScroll", "toast",
-    "typographyButton", "typographyPanel", "resetTypographyButton", "stripQueryToggle",
+    "typographyButton", "typographyPanel", "typographyHeading", "resetTypographyButton", "stripQueryToggle",
+    "typographyScopeSelect", "typographyScopeHint",
     "columnMappingDialog", "columnMappingForm", "columnMappingFields", "mappingFilename",
     "cancelMappingButton"
   ].map((id) => [id, document.getElementById(id)]));
@@ -114,19 +115,23 @@
     els.typographyPanel.hidden = !willOpen;
     els.typographyButton.setAttribute("aria-expanded", String(willOpen));
   });
+  els.typographyScopeSelect.addEventListener("change", () => {
+    syncTypographyControls();
+    showToast(els.typographyScopeSelect.value === "all" ? "文字サイズを全作品へ一括反映します" : "選択中の作品だけ変更します");
+  });
   els.resetTypographyButton.addEventListener("click", () => {
-    const row = state.rows[state.selected];
-    if (!row) return;
-    row.typography = { ...DEFAULT_TYPOGRAPHY };
+    const targets = typographyTargets();
+    if (!targets.length) return;
+    targets.forEach((row) => { row.typography = { ...DEFAULT_TYPOGRAPHY }; });
     syncTypographyControls();
     renderPages();
-    showToast("選択中の作品の文字サイズを初期値に戻しました");
+    showToast(els.typographyScopeSelect.value === "all" ? "全作品の文字サイズを初期値に戻しました" : "選択中の作品の文字サイズを初期値に戻しました");
   });
   els.typographyPanel.querySelectorAll("[data-font-size]").forEach((input) => {
     input.addEventListener("input", () => {
-      const row = state.rows[state.selected];
-      if (!row) return;
-      row.typography[input.dataset.fontSize] = Number(input.value);
+      const targets = typographyTargets();
+      if (!targets.length) return;
+      targets.forEach((row) => { row.typography[input.dataset.fontSize] = Number(input.value); });
       syncTypographyControls();
       renderPages();
     });
@@ -526,8 +531,18 @@
     els.typographyButton.setAttribute("aria-expanded", "false");
   }
 
+  function typographyTargets() {
+    if (els.typographyScopeSelect.value === "all") return state.rows;
+    const row = state.rows[state.selected];
+    return row ? [row] : [];
+  }
+
   function syncTypographyControls() {
+    const allWorks = els.typographyScopeSelect.value === "all";
     const typography = state.rows[state.selected]?.typography || DEFAULT_TYPOGRAPHY;
+    els.typographyHeading.textContent = allWorks ? "全作品の文字設定" : "選択中の作品の文字設定";
+    els.resetTypographyButton.textContent = allWorks ? "全作品を初期値に戻す" : "この作品を初期値に戻す";
+    els.typographyScopeHint.textContent = allWorks ? "動かした項目をすべての作品へ反映します" : "現在選択している作品だけを変更します";
     els.typographyPanel.querySelectorAll("[data-font-size]").forEach((input) => {
       const key = input.dataset.fontSize;
       input.value = typography[key];
