@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=Shippori+Mincho:wght@500;600&amp;display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23151817'/%3E%3Cpath d='M17 17h30v30H17z' fill='none' stroke='%23ff99d4' stroke-width='4'/%3E%3Cpath d='M23 39l8-14 10 14' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=20260929-2" />
+    <link rel="stylesheet" href="./styles.css?v=20261001-1" />
   </head>
   <body>
     <header class="app-header">
@@ -142,8 +142,26 @@
       </aside>
     </main>
 
+    <dialog class="mapping-dialog" id="columnMappingDialog" aria-labelledby="mappingTitle">
+      <form id="columnMappingForm">
+        <div class="mapping-heading">
+          <div>
+            <p class="eyebrow">CSV COLUMN MAPPING</p>
+            <h2 id="mappingTitle">CSV列を割り当てる</h2>
+          </div>
+          <span id="mappingFilename"></span>
+        </div>
+        <p class="mapping-help">各項目に使うCSVの列を選んでください。既知の列名は自動で選択されています。</p>
+        <div class="mapping-fields" id="columnMappingFields"></div>
+        <div class="mapping-actions">
+          <button class="button mapping-cancel" type="button" id="cancelMappingButton">キャンセル</button>
+          <button class="button primary" type="submit">この割り当てで読み込む</button>
+        </div>
+      </form>
+    </dialog>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./qrcode.min.js"></script>
-    <script src="./app.js?v=20260929-2"></script>
+    <script src="./app.js?v=20261001-1"></script>
   </body>
 </html>

@@ -158,6 +158,22 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .text-button { padding: 5px 0; border: 0; background: transparent; cursor: pointer; font-size: 12px; }
 .text-button.danger { color: var(--danger); }
 
+.mapping-dialog { width: min(720px, calc(100vw - 32px)); max-height: min(780px, calc(100vh - 32px)); padding: 0; border: 1px solid #aeb5af; border-radius: 3px; background: #f9faf7; color: var(--ink); box-shadow: 0 28px 80px rgba(15,20,17,.32); }
+.mapping-dialog::backdrop { background: rgba(21,24,23,.58); backdrop-filter: blur(3px); }
+.mapping-dialog form { max-height: min(780px, calc(100vh - 32px)); display: flex; flex-direction: column; }
+.mapping-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 24px 26px 15px; border-bottom: 1px solid var(--line); background: white; }
+.mapping-heading h2 { margin: 0; font: 600 24px/1.3 var(--serif); }
+.mapping-heading > span { max-width: 45%; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapping-help { margin: 0; padding: 15px 26px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.mapping-fields { min-height: 0; overflow-y: auto; padding: 0 26px 12px; }
+.mapping-row { display: grid; grid-template-columns: minmax(180px, .75fr) minmax(260px, 1.25fr); align-items: center; gap: 18px; padding: 8px 0; border-bottom: 1px solid #e4e7e2; }
+.mapping-row > span { color: #4e544f; font-size: 12px; font-weight: 600; }
+.mapping-row > span b { margin-left: 7px; color: var(--danger); font-size: 9px; }
+.mapping-row select { width: 100%; min-width: 0; height: 38px; padding: 0 34px 0 10px; border: 1px solid #cdd2cc; border-radius: 0; background: white; color: var(--ink); font-size: 12px; }
+.mapping-row select:focus { outline: 2px solid rgba(255,153,212,.55); border-color: #646b65; }
+.mapping-actions { display: flex; justify-content: flex-end; gap: 9px; padding: 16px 26px 20px; border-top: 1px solid var(--line); background: white; }
+.mapping-cancel { border-color: var(--line); background: white; color: var(--ink); }
+
 .toast { position: fixed; left: 50%; bottom: 28px; z-index: 50; transform: translate(-50%, 18px); padding: 11px 16px; background: #151817; color: white; opacity: 0; pointer-events: none; transition: .2s ease; font-size: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -187,6 +203,12 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
   .inspector-head { padding: 22px 18px 16px; }
   #editorForm { padding-inline: 18px; overflow: visible; }
   .inspector-footer { padding-inline: 18px; }
+  .mapping-heading { align-items: start; padding: 20px 18px 13px; }
+  .mapping-heading h2 { font-size: 21px; }
+  .mapping-help { padding: 13px 18px; }
+  .mapping-fields { padding-inline: 18px; }
+  .mapping-row { grid-template-columns: 1fr; gap: 6px; padding: 10px 0; }
+  .mapping-actions { padding: 14px 18px 18px; }
 }
 
 @page { size: A4 landscape; margin: 0; }

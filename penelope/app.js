@@ -21,6 +21,21 @@
     "表示する名前 / Written name",
     "表示する名前"
   ];
+  const FIELD_LABELS = {
+    title: "作品タイトル",
+    author: "表記する名前",
+    fullName: "本名（表記名が空のときの代替）",
+    university: "所属大学",
+    grade: "学年",
+    caption: "キャプション",
+    sns: "SNSリンク（QR）",
+    location: "撮影場所",
+    camera: "使用機材・カメラ",
+    lens: "使用レンズ",
+    shutter: "シャッタースピード",
+    aperture: "絞り値",
+    iso: "ISO感度・フィルム名"
+  };
   const DEFAULT_TYPOGRAPHY = { title: 100, person: 100, caption: 100, tech: 100 };
 
   const state = {
@@ -32,6 +47,7 @@
     fit: false,
     typography: { ...DEFAULT_TYPOGRAPHY },
     stripQuery: false,
+    pendingImport: null,
     filename: "penelope-captions.csv"
   };
 
@@ -40,7 +56,9 @@
     "pageCount", "issueCount", "searchInput", "pages", "pageSelect", "previewTitle",
     "editorForm", "selectedIndex", "moveUpButton", "moveDownButton", "deleteButton",
     "downloadCsvButton", "printButton", "fitButton", "previewScroll", "toast",
-    "typographyButton", "typographyPanel", "resetTypographyButton", "stripQueryToggle"
+    "typographyButton", "typographyPanel", "resetTypographyButton", "stripQueryToggle",
+    "columnMappingDialog", "columnMappingForm", "columnMappingFields", "mappingFilename",
+    "cancelMappingButton"
   ].map((id) => [id, document.getElementById(id)]));
 
   loadPreferences();
@@ -85,6 +103,12 @@
   els.moveUpButton.addEventListener("click", () => moveSelected(-1));
   els.moveDownButton.addEventListener("click", () => moveSelected(1));
   els.deleteButton.addEventListener("click", deleteSelected);
+  els.columnMappingForm.addEventListener("submit", confirmColumnMapping);
+  els.cancelMappingButton.addEventListener("click", () => {
+    state.pendingImport = null;
+    els.columnMappingDialog.close();
+  });
+  els.columnMappingDialog.addEventListener("cancel", () => { state.pendingImport = null; });
   els.typographyButton.addEventListener("click", () => {
     const willOpen = els.typographyPanel.hidden;
     els.typographyPanel.hidden = !willOpen;
@@ -128,7 +152,7 @@
     if (!input.name || !(input.name in FIELDS)) return;
     const row = state.rows[state.selected];
     row[input.name] = input.value;
-    const targetHeader = findFieldHeader(row.raw, input.name);
+    const targetHeader = ensureFieldHeader(input.name);
     row.raw[targetHeader] = input.value;
     renderStats();
     renderList();
@@ -157,45 +181,94 @@
       const table = parseCsv(text.replace(/^\uFEFF/, ""));
       if (table.length < 2) throw new Error("データ行がありません");
       const headers = table[0].map((header) => header.trim());
-      if (!findMatchingHeader(headers, [FIELDS.title])) throw new Error(`「${FIELDS.title}」列が見つかりません`);
-      const rows = table.slice(1)
-        .filter((cells) => cells.some((cell) => cell.trim()))
-        .map((cells) => {
-          const raw = Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ""]));
-          return normalizeRow(raw);
-        });
-      if (!rows.length) throw new Error("作品データが入った行がありません");
-      state.headers = headers;
-      state.rows = rows;
-      state.selected = 0;
-      state.page = "all";
-      state.filename = file.name;
-      state.query = "";
-      els.searchInput.value = "";
-      activateWorkspace();
-      renderAll();
-      showToast(`${rows.length}作品を読み込みました`);
+      if (!headers.some(Boolean)) throw new Error("列名が見つかりません");
+      state.pendingImport = { file, headers, table };
+      renderColumnMapping(headers, file.name);
+      els.columnMappingDialog.showModal();
     } catch (error) {
       showToast(error.message || "CSVを読み込めませんでした");
     }
   }
 
-  function normalizeRow(raw) {
-    const captionValue = clean(readField(raw, "caption"));
+  function renderColumnMapping(headers, filename) {
+    els.mappingFilename.textContent = filename;
+    els.columnMappingFields.replaceChildren();
+    Object.keys(FIELDS).forEach((key) => {
+      const label = document.createElement("label");
+      label.className = "mapping-row";
+      const name = document.createElement("span");
+      name.textContent = FIELD_LABELS[key];
+      if (key === "title") {
+        const required = document.createElement("b");
+        required.textContent = "必須";
+        name.append(required);
+      }
+      const select = document.createElement("select");
+      select.dataset.mappingKey = key;
+      select.setAttribute("aria-label", `${FIELD_LABELS[key]}に割り当てるCSV列`);
+      select.add(new Option("使用しない", ""));
+      headers.forEach((header) => select.add(new Option(header || "（列名なし）", header)));
+      select.value = suggestFieldHeader(headers, key) || "";
+      label.append(name, select);
+      els.columnMappingFields.append(label);
+    });
+  }
+
+  function confirmColumnMapping(event) {
+    event.preventDefault();
+    const pending = state.pendingImport;
+    if (!pending) return;
+    const mapping = {};
+    els.columnMappingFields.querySelectorAll("[data-mapping-key]").forEach((select) => {
+      mapping[select.dataset.mappingKey] = select.value;
+    });
+    if (!mapping.title) {
+      showToast("作品タイトルに使うCSV列を選んでください");
+      els.columnMappingFields.querySelector('[data-mapping-key="title"]')?.focus();
+      return;
+    }
+    const rows = pending.table.slice(1)
+      .filter((cells) => cells.some((cell) => cell.trim()))
+      .map((cells) => {
+        const raw = Object.fromEntries(pending.headers.map((header, index) => [header, cells[index] ?? ""]));
+        return normalizeRow(raw, mapping);
+      });
+    if (!rows.length) {
+      showToast("作品データが入った行がありません");
+      return;
+    }
+    state.headers = pending.headers;
+    state.rows = rows;
+    state.selected = 0;
+    state.page = "all";
+    state.filename = pending.file.name;
+    state.query = "";
+    state.pendingImport = null;
+    els.searchInput.value = "";
+    els.columnMappingDialog.close();
+    activateWorkspace();
+    renderAll();
+    showToast(`${rows.length}作品を読み込みました`);
+  }
+
+  function normalizeRow(raw, mapping) {
+    const read = (key) => mapping[key] ? raw[mapping[key]] : "";
+    const captionValue = clean(read("caption"));
     return {
       raw,
-      title: clean(readField(raw, "title")),
-      author: clean(raw[findAuthorHeader(raw)]) || clean(readField(raw, "fullName")),
-      university: shortBilingual(readField(raw, "university")),
-      grade: shortBilingual(readField(raw, "grade")),
+      fieldHeaders: { ...mapping },
+      title: clean(read("title")),
+      author: clean(read("author")) || clean(read("fullName")),
+      university: shortBilingual(read("university")),
+      grade: shortBilingual(read("grade")),
       caption: /^(キャプション無し|キャプションなし|-|なし|無し)$/i.test(captionValue) ? "" : captionValue,
-      sns: clean(readField(raw, "sns")),
-      location: clean(readField(raw, "location")),
-      camera: clean(readField(raw, "camera")),
-      lens: clean(readField(raw, "lens")),
-      shutter: clean(readField(raw, "shutter")),
-      aperture: clean(readField(raw, "aperture")),
-      iso: clean(readField(raw, "iso")),
+      sns: clean(read("sns")),
+      location: clean(read("location")),
+      camera: clean(read("camera")),
+      lens: clean(read("lens")),
+      shutter: clean(read("shutter")),
+      aperture: clean(read("aperture")),
+      iso: clean(read("iso")),
       typography: { ...DEFAULT_TYPOGRAPHY }
     };
   }
@@ -208,17 +281,20 @@
     return clean(value).split(" / ")[0];
   }
 
-  function findAuthorHeader(raw) {
-    return findMatchingHeader(Object.keys(raw), AUTHOR_HEADERS) || FIELDS.author;
+  function suggestFieldHeader(headers, key) {
+    return findMatchingHeader(headers, key === "author" ? AUTHOR_HEADERS : [FIELDS[key]]) || "";
   }
 
-  function findFieldHeader(raw, key) {
-    if (key === "author") return findAuthorHeader(raw);
-    return findMatchingHeader(Object.keys(raw), [FIELDS[key]]) || FIELDS[key];
-  }
-
-  function readField(raw, key) {
-    return raw[findFieldHeader(raw, key)];
+  function ensureFieldHeader(key) {
+    const existing = state.rows[state.selected]?.fieldHeaders[key];
+    if (existing) return existing;
+    const header = FIELDS[key];
+    if (!state.headers.includes(header)) state.headers.push(header);
+    state.rows.forEach((row) => {
+      if (!Object.prototype.hasOwnProperty.call(row.raw, header)) row.raw[header] = "";
+      row.fieldHeaders[key] = header;
+    });
+    return header;
   }
 
   function findMatchingHeader(headers, candidates) {
@@ -539,8 +615,8 @@
   function downloadCsv() {
     state.rows.forEach((row) => {
       Object.entries(FIELDS).forEach(([key, header]) => {
-        const targetHeader = findFieldHeader(row.raw, key);
-        if (key !== "fullName" && targetHeader in row.raw) row.raw[targetHeader] = row[key] ?? "";
+        const targetHeader = row.fieldHeaders[key];
+        if (key !== "fullName" && targetHeader && targetHeader in row.raw) row.raw[targetHeader] = row[key] ?? "";
       });
     });
     const lines = [state.headers, ...state.rows.map((row) => state.headers.map((header) => row.raw[header] ?? ""))];
