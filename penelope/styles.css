@@ -7,14 +7,10 @@
   --wash: #f0f2ed;
   --accent: #ff99d4;
   --accent-ink: #10120e;
-  --title-font: clamp(10px, 1.25vw, 20px);
-  --person-font: clamp(6px, .67vw, 10px);
-  --caption-font: clamp(6px, .64vw, 10px);
-  --tech-font: clamp(6px, .67vw, 10px);
-  --print-title-font: 5mm;
-  --print-person-font: 2.55mm;
-  --print-caption-font: 2.45mm;
-  --print-tech-font: 2.55mm;
+  --title-font: 5mm;
+  --person-font: 2.55mm;
+  --caption-font: 2.45mm;
+  --tech-font: 2.55mm;
   --danger: #b33b2f;
   --sans: "Noto Sans JP", system-ui, sans-serif;
   --serif: "Shippori Mincho", "Hiragino Mincho ProN", serif;
@@ -99,20 +95,19 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .select-wrap { min-height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--line); background: white; color: var(--muted); font-size: 12px; }
 .select-wrap select { border: 0; outline: 0; background: transparent; color: var(--ink); }
 .preview-scroll { height: 0; flex: 1 1 0; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 32px; }
-.preview-scroll.fit .print-page { width: min(100%, 760px); }
 .pages { display: flex; flex-direction: column; align-items: center; gap: 30px; }
-.print-page { width: min(100%, 990px); aspect-ratio: 297 / 210; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); background: var(--paper); box-shadow: 0 14px 45px rgba(37,45,39,.18); }
+.print-page { width: 297mm; height: 210mm; flex: 0 0 auto; zoom: var(--preview-zoom, 1); display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); background: var(--paper); box-shadow: 0 14px 45px rgba(37,45,39,.18); }
 .caption-card { min-width: 0; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; border-right: 1px solid #d8d8d4; border-bottom: 1px solid #d8d8d4; cursor: pointer; transition: outline-color .15s; outline: 3px solid transparent; outline-offset: -3px; }
 .caption-card:nth-child(2n) { border-right: 0; }
 .caption-card:nth-child(n+5) { border-bottom: 0; }
-.caption-card.selected { outline-color: var(--accent); }
-.card-primary, .card-tech { min-width: 0; padding: clamp(11px, 1.45vw, 25px); display: flex; flex-direction: column; justify-content: center; }
+.caption-card.selected { outline-color: transparent; }
+.card-primary, .card-tech { min-width: 0; padding: 4.3mm; display: flex; flex-direction: column; justify-content: center; }
 .card-primary { border-right: 1px solid #ededeb; }
 .card-title { margin: 0 0 20px; font: 600 var(--title-font)/1.35 var(--serif); overflow-wrap: anywhere; }
 .card-person { font-size: var(--person-font); line-height: 1.55; }
 .author-name { font-weight: 400; }
 .author-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.qr-slot { width: clamp(26px, 3vw, 46px); aspect-ratio: 1; flex: 0 0 auto; }
+.qr-slot { width: 13mm; aspect-ratio: 1; flex: 0 0 auto; }
 .qr-slot canvas, .qr-slot img { display: block; width: 100% !important; height: 100% !important; }
 .card-caption { margin: 14px 0 0; padding-top: 13px; border-top: 1px solid #373a38; font: 500 var(--caption-font)/1.65 var(--serif); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .card-tech { align-items: center; text-align: center; gap: 11px; font-size: var(--tech-font); line-height: 1.45; }
@@ -202,7 +197,6 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
   .stage-toolbar { padding: 12px 14px; }
   .stage-toolbar .compact { display: none; }
   .preview-scroll { height: auto; padding: 16px 10px 25px; }
-  .print-page { min-width: 660px; }
   .inspector { border: 0; border-top: 1px solid var(--line); }
   .inspector-head { padding: 22px 18px 16px; }
   #editorForm { padding-inline: 18px; overflow: visible; }
@@ -220,12 +214,7 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
   body { background: white; overflow: visible; }
   .app-header, .sidebar, .inspector, .stage-toolbar, .toast { display: none !important; }
   .workspace, .workspace.has-data, .stage, .loaded-view, .preview-scroll, .pages { display: block; height: auto; overflow: visible; background: white; padding: 0; }
-  .print-page { width: 297mm; height: 210mm; break-after: page; box-shadow: none; }
+  .print-page { width: 297mm; height: 210mm; zoom: 1 !important; break-after: page; box-shadow: none; }
   .print-page:last-child { break-after: auto; }
   .caption-card.selected { outline-color: transparent; }
-  .card-title { font-size: var(--print-title-font); }
-  .card-person { font-size: var(--print-person-font); }
-  .card-tech { font-size: var(--print-tech-font); }
-  .card-caption { font-size: var(--print-caption-font); }
-  .qr-slot { width: 13mm; }
 }

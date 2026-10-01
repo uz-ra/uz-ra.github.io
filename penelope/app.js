@@ -65,6 +65,10 @@
   loadPreferences();
   applyTypography();
 
+  const previewResizeObserver = typeof ResizeObserver === "function" ? new ResizeObserver(updatePreviewScale) : null;
+  previewResizeObserver?.observe(els.previewScroll);
+  window.addEventListener("resize", updatePreviewScale);
+
   document.querySelectorAll('input[type="file"]').forEach((input) => {
     input.addEventListener("change", (event) => {
       const file = event.target.files?.[0];
@@ -87,6 +91,7 @@
     state.fit = !state.fit;
     els.previewScroll.classList.toggle("fit", state.fit);
     els.fitButton.textContent = state.fit ? "大きく表示" : "全体表示";
+    updatePreviewScale();
   });
 
   els.printButton.addEventListener("click", () => {
@@ -419,6 +424,20 @@
       els.pages.append(page);
     });
     renderQrCodes();
+    requestAnimationFrame(updatePreviewScale);
+  }
+
+  function updatePreviewScale() {
+    const page = els.pages.querySelector(".print-page");
+    if (!page || els.loadedView.hidden) return;
+    const previewStyle = getComputedStyle(els.previewScroll);
+    const availableWidth = els.previewScroll.clientWidth
+      - parseFloat(previewStyle.paddingLeft)
+      - parseFloat(previewStyle.paddingRight);
+    const maximumWidth = state.fit ? 760 : 990;
+    const a4WidthInCssPixels = 297 * 96 / 25.4;
+    const scale = Math.min(1, Math.max(0.1, Math.min(availableWidth, maximumWidth) / a4WidthInCssPixels));
+    els.pages.style.setProperty("--preview-zoom", String(scale));
   }
 
   function createCard(row, index) {
@@ -554,15 +573,14 @@
 
   function applyTypography(target = document.documentElement, typography = state.typography) {
     const definitions = {
-      title: [10, 1.25, 20, 5],
-      person: [6, .67, 10, 2.55],
-      caption: [6, .64, 10, 2.45],
-      tech: [6, .67, 10, 2.55]
+      title: 5,
+      person: 2.55,
+      caption: 2.45,
+      tech: 2.55
     };
-    Object.entries(definitions).forEach(([key, [minimum, fluid, maximum, print]]) => {
+    Object.entries(definitions).forEach(([key, millimeters]) => {
       const scale = typography[key] / 100;
-      target.style.setProperty(`--${key}-font`, `clamp(${formatSize(minimum * scale)}px, ${formatSize(fluid * scale)}vw, ${formatSize(maximum * scale)}px)`);
-      target.style.setProperty(`--print-${key}-font`, `${formatSize(print * scale)}mm`);
+      target.style.setProperty(`--${key}-font`, `${formatSize(millimeters * scale)}mm`);
     });
   }
 
