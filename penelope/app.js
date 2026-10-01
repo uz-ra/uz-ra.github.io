@@ -432,7 +432,7 @@
     primary.className = "card-primary";
     const title = document.createElement("h3");
     title.className = "card-title";
-    title.textContent = row.title || "タイトル未入力";
+    title.textContent = row.title;
     const person = document.createElement("div");
     person.className = "card-person";
     const affiliation = document.createElement("div");
@@ -451,7 +451,8 @@
       authorRow.append(qr);
     }
     person.append(affiliation, authorRow);
-    primary.append(title, person);
+    if (row.title) primary.append(title);
+    primary.append(person);
     if (row.caption) {
       const caption = document.createElement("p");
       caption.className = "card-caption";
