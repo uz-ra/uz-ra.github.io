@@ -36,7 +36,13 @@
     aperture: "絞り値",
     iso: "ISO感度・フィルム名"
   };
-  const DEFAULT_TYPOGRAPHY = { title: 100, person: 100, caption: 100, tech: 100 };
+  const DEFAULT_TYPOGRAPHY = { title: 110, person: 110, caption: 110, tech: 110 };
+  const TYPOGRAPHY_HEADERS = {
+    title: "文字サイズ：作品タイトル（%）",
+    person: "文字サイズ：所属・作者（%）",
+    caption: "文字サイズ：キャプション（%）",
+    tech: "文字サイズ：撮影情報（%）"
+  };
 
   const state = {
     headers: [],
@@ -105,7 +111,7 @@
     });
   });
 
-  els.downloadCsvButton.addEventListener("click", downloadCsv);
+  els.downloadCsvButton.addEventListener("click", requestCsvDownload);
   els.moveUpButton.addEventListener("click", () => moveSelected(-1));
   els.moveDownButton.addEventListener("click", () => moveSelected(1));
   els.deleteButton.addEventListener("click", deleteSelected);
@@ -165,6 +171,18 @@
     const targetHeader = ensureFieldHeader(input.name);
     row.raw[targetHeader] = input.value;
     renderStats();
+    renderList();
+    renderPages();
+    pulseSaved();
+  });
+
+  els.editorForm.addEventListener("change", (event) => {
+    if (state.selected < 0 || event.target.name !== "aperture") return;
+    const row = state.rows[state.selected];
+    const normalized = normalizeAperture(event.target.value);
+    event.target.value = normalized;
+    row.aperture = normalized;
+    row.raw[ensureFieldHeader("aperture")] = normalized;
     renderList();
     renderPages();
     pulseSaved();
@@ -277,10 +295,22 @@
       camera: clean(read("camera")),
       lens: clean(read("lens")),
       shutter: clean(read("shutter")),
-      aperture: clean(read("aperture")),
+      aperture: normalizeAperture(read("aperture")),
       iso: clean(read("iso")),
-      typography: { ...DEFAULT_TYPOGRAPHY }
+      typography: readTypography(raw),
+      captionOverflow: false
     };
+  }
+
+  function readTypography(raw) {
+    const typography = { ...DEFAULT_TYPOGRAPHY };
+    const rawHeaders = Object.keys(raw);
+    Object.entries(TYPOGRAPHY_HEADERS).forEach(([key, expectedHeader]) => {
+      const matchingHeader = findMatchingHeader(rawHeaders, [expectedHeader]);
+      const value = Number(matchingHeader ? raw[matchingHeader] : NaN);
+      if (Number.isFinite(value) && value >= 70 && value <= 150) typography[key] = value;
+    });
+    return typography;
   }
 
   function clean(value) {
@@ -289,6 +319,13 @@
 
   function shortBilingual(value) {
     return clean(value).split(" / ")[0];
+  }
+
+  function normalizeAperture(value) {
+    const cleaned = clean(value).normalize("NFKC");
+    if (!cleaned) return "";
+    const number = cleaned.match(/\d+(?:\.\d+)?/);
+    return number ? `f${number[0]}` : cleaned.replace(/F/g, "f");
   }
 
   function suggestFieldHeader(headers, key) {
@@ -334,7 +371,7 @@
   }
 
   function renderStats() {
-    const issues = state.rows.filter((row) => !row.title || !row.author).length;
+    const issues = state.rows.filter((row) => rowWarnings(row).length).length;
     els.workCount.textContent = state.rows.length;
     els.pageCount.textContent = Math.ceil(state.rows.length / 6);
     els.issueCount.textContent = issues;
@@ -361,10 +398,12 @@
       author.textContent = row.author || "表記名未入力";
       meta.append(title, author);
       button.append(number, meta);
-      if (!row.title || !row.author) {
+      const warnings = rowWarnings(row);
+      if (warnings.length) {
         const issue = document.createElement("span");
         issue.className = "issue-dot";
-        issue.title = "必須項目を確認してください";
+        issue.title = warnings.join("\n");
+        issue.setAttribute("aria-label", warnings.join("、"));
         button.append(issue);
       }
       fragment.append(button);
@@ -424,7 +463,46 @@
       els.pages.append(page);
     });
     renderQrCodes();
-    requestAnimationFrame(updatePreviewScale);
+    requestAnimationFrame(() => {
+      updatePreviewScale();
+      detectLayoutWarnings();
+    });
+  }
+
+  function rowWarnings(row) {
+    const warnings = [];
+    if (!row.title) warnings.push("作品タイトルが未入力です");
+    if (!row.author) warnings.push("表記名が未入力です");
+    if (row.captionOverflow) warnings.push("キャプションが…で見切れています");
+    if (/^\d+$/.test(row.iso)) warnings.push("ISOが数字だけです");
+    return warnings;
+  }
+
+  function detectLayoutWarnings() {
+    let changed = false;
+    els.pages.querySelectorAll(".caption-card[data-row-index]").forEach((card) => {
+      const row = state.rows[Number(card.dataset.rowIndex)];
+      if (!row) return;
+      const caption = card.querySelector(".card-caption");
+      const overflow = Boolean(caption && caption.scrollHeight > caption.clientHeight + 1);
+      if (row.captionOverflow !== overflow) changed = true;
+      row.captionOverflow = overflow;
+      const visualWarnings = rowWarnings(row).filter((warning) => warning.includes("見切れ") || warning.includes("ISO"));
+      if (visualWarnings.length) {
+        const alerts = document.createElement("div");
+        alerts.className = "card-alerts";
+        visualWarnings.forEach((warning) => {
+          const alert = document.createElement("span");
+          alert.textContent = `⚠ ${warning}`;
+          alerts.append(alert);
+        });
+        card.append(alerts);
+      }
+    });
+    if (changed) {
+      renderStats();
+      renderList();
+    }
   }
 
   function updatePreviewScale() {
@@ -445,6 +523,7 @@
     card.className = `caption-card${index === state.selected ? " selected" : ""}`;
     applyTypography(card, row.typography);
     card.tabIndex = 0;
+    card.dataset.rowIndex = String(index);
     card.setAttribute("aria-label", `${index + 1}. ${row.title || "タイトル未入力"}`);
     const choose = () => selectRow(index);
     card.addEventListener("click", choose);
@@ -646,11 +725,30 @@
     showToast("作品を削除しました");
   }
 
-  function downloadCsv() {
+  function requestCsvDownload() {
+    const defaultName = `${state.filename.replace(/\.csv$/i, "")}_edited.csv`;
+    const requestedName = window.prompt("保存するCSVファイル名を入力してください", defaultName);
+    if (requestedName === null) return;
+    const filename = requestedName.trim().replace(/[\\/:*?"<>|]/g, "_");
+    if (!filename) {
+      showToast("ファイル名を入力してください");
+      return;
+    }
+    downloadCsv(filename.toLowerCase().endsWith(".csv") ? filename : `${filename}.csv`);
+  }
+
+  function downloadCsv(filename) {
+    Object.values(TYPOGRAPHY_HEADERS).forEach((header) => {
+      if (!findMatchingHeader(state.headers, [header])) state.headers.push(header);
+    });
     state.rows.forEach((row) => {
       Object.entries(FIELDS).forEach(([key, header]) => {
         const targetHeader = row.fieldHeaders[key];
         if (key !== "fullName" && targetHeader && targetHeader in row.raw) row.raw[targetHeader] = row[key] ?? "";
+      });
+      Object.entries(TYPOGRAPHY_HEADERS).forEach(([key, expectedHeader]) => {
+        const targetHeader = findMatchingHeader(state.headers, [expectedHeader]) || expectedHeader;
+        row.raw[targetHeader] = row.typography[key];
       });
     });
     const lines = [state.headers, ...state.rows.map((row) => state.headers.map((header) => row.raw[header] ?? ""))];
@@ -658,10 +756,11 @@
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    const stem = state.filename.replace(/\.csv$/i, "");
-    link.download = `${stem}_edited.csv`;
+    link.download = filename;
+    document.body.append(link);
     link.click();
-    URL.revokeObjectURL(link.href);
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     showToast("編集済みCSVを書き出しました");
   }
 
