@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=Shippori+Mincho:wght@500;600&amp;display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23151817'/%3E%3Cpath d='M17 17h30v30H17z' fill='none' stroke='%23ff99d4' stroke-width='4'/%3E%3Cpath d='M23 39l8-14 10 14' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=20261009-1" />
+    <link rel="stylesheet" href="./styles.css?v=20261009-2" />
   </head>
   <body>
     <header class="app-header">
@@ -34,10 +34,14 @@
             <p class="eyebrow">作品データ</p>
             <h1>キャプションを整える</h1>
           </div>
-          <label class="icon-button" title="CSVを追加で読み込む">
-            <input id="fileInputCompact" type="file" accept=".csv,text/csv" hidden />
-            <span aria-hidden="true">＋</span><span class="sr-only">CSVを追加で読み込む</span>
-          </label>
+          <div class="sidebar-tools">
+            <button class="icon-button" type="button" data-add-work title="作品を手動で追加"><span aria-hidden="true">＋</span><span class="sr-only">作品を手動で追加</span></button>
+            <label class="icon-button" title="CSVを追加で読み込む">
+              <input id="fileInputCompact" type="file" accept=".csv,text/csv" hidden />
+              <span class="tool-label" aria-hidden="true">CSV</span><span class="sr-only">CSVを追加で読み込む</span>
+            </label>
+            <button class="icon-button" type="button" id="remapButton" title="CSV列を再割り当て" hidden><span class="tool-label" aria-hidden="true">列</span><span class="sr-only">CSV列を再割り当て</span></button>
+          </div>
         </div>
 
         <div class="stats" aria-label="読み込み状況">
@@ -63,10 +67,13 @@
           <p class="eyebrow">READY FOR YOUR EXHIBITION</p>
           <h2>CSVから、印刷できる<br />キャプションへ。</h2>
           <p class="empty-copy">Googleフォームから書き出したCSVを選ぶと、6作品ずつA4横に自動配置します。</p>
-          <label class="button primary file-button">
-            <input id="fileInput" type="file" accept=".csv,text/csv" hidden />
-            CSVを選ぶ
-          </label>
+          <div class="empty-actions">
+            <label class="button primary file-button">
+              <input id="fileInput" type="file" accept=".csv,text/csv" hidden />
+              CSVを選ぶ
+            </label>
+            <button class="button compact" type="button" data-add-work>手動で作品を追加</button>
+          </div>
           <span class="drop-hint">または、ここにCSVをドロップ</span>
         </div>
 
@@ -163,6 +170,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./qrcode.min.js"></script>
-    <script src="./app.js?v=20261009-1"></script>
+    <script src="./app.js?v=20261009-2"></script>
   </body>
 </html>

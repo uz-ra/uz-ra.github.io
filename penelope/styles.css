@@ -54,6 +54,9 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .sidebar, .inspector { min-width: 0; min-height: 0; background: #f9faf7; }
 .sidebar { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--line); }
 .sidebar-head, .inspector-head { display: flex; align-items: center; justify-content: space-between; padding: 25px 22px 18px; }
+.sidebar-tools { display: flex; align-items: center; gap: 6px; }
+.sidebar-tools .icon-button { width: 34px; height: 34px; font-size: 18px; }
+.tool-label { font-size: 9px; font-weight: 700; letter-spacing: -.02em; }
 .eyebrow { margin: 0 0 7px; color: #858c86; font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
 .sidebar h1, .inspector h2, .stage-toolbar h2 { margin: 0; font-size: 18px; line-height: 1.35; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 14px 14px; border: 1px solid var(--line); background: white; }
@@ -84,6 +87,7 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .paper-front span { border-right: 1px solid #dfe3de; border-bottom: 1px solid #dfe3de; }
 .empty-state h2 { margin: 0; font: 600 clamp(28px, 4vw, 45px)/1.42 var(--serif); letter-spacing: .02em; }
 .empty-copy { max-width: 440px; margin: 20px auto 26px; color: var(--muted); font-size: 14px; line-height: 1.9; }
+.empty-actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 9px; }
 .drop-hint { margin-top: 12px; color: #8b928c; font-size: 11px; }
 .stage.dragging::after { content: "CSVをドロップ"; position: absolute; inset: 18px; display: grid; place-items: center; border: 2px dashed #151817; background: rgba(255,153,212,.92); font-weight: 700; z-index: 20; }
 

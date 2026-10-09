@@ -65,7 +65,7 @@
     "typographyButton", "typographyPanel", "typographyHeading", "resetTypographyButton", "stripQueryToggle",
     "typographyScopeSelect", "typographyScopeHint",
     "columnMappingDialog", "columnMappingForm", "columnMappingFields", "mappingFilename",
-    "cancelMappingButton"
+    "cancelMappingButton", "remapButton"
   ].map((id) => [id, document.getElementById(id)]));
 
   loadPreferences();
@@ -82,6 +82,11 @@
       input.value = "";
     });
   });
+
+  document.querySelectorAll("[data-add-work]").forEach((button) => {
+    button.addEventListener("click", addManualWork);
+  });
+  els.remapButton.addEventListener("click", openColumnRemapping);
 
   els.searchInput.addEventListener("input", (event) => {
     state.query = event.target.value.trim().toLowerCase();
@@ -210,7 +215,7 @@
       if (table.length < 2) throw new Error("データ行がありません");
       const headers = table[0].map((header) => header.trim());
       if (!headers.some(Boolean)) throw new Error("列名が見つかりません");
-      state.pendingImport = { file, headers, table };
+      state.pendingImport = { mode: "import", file, headers, table };
       renderColumnMapping(headers, file.name);
       els.columnMappingDialog.showModal();
     } catch (error) {
@@ -218,7 +223,7 @@
     }
   }
 
-  function renderColumnMapping(headers, filename) {
+  function renderColumnMapping(headers, filename, presetMapping = {}) {
     els.mappingFilename.textContent = filename;
     els.columnMappingFields.replaceChildren();
     Object.keys(FIELDS).forEach((key) => {
@@ -236,7 +241,7 @@
       select.setAttribute("aria-label", `${FIELD_LABELS[key]}に割り当てるCSV列`);
       select.add(new Option("使用しない", ""));
       headers.forEach((header) => select.add(new Option(header || "（列名なし）", header)));
-      select.value = suggestFieldHeader(headers, key) || "";
+      select.value = presetMapping[key] || suggestFieldHeader(headers, key) || "";
       label.append(name, select);
       els.columnMappingFields.append(label);
     });
@@ -253,6 +258,20 @@
     if (!mapping.title) {
       showToast("作品タイトルに使うCSV列を選んでください");
       els.columnMappingFields.querySelector('[data-mapping-key="title"]')?.focus();
+      return;
+    }
+    if (pending.mode === "remap") {
+      state.rows = state.rows.map((row) => {
+        const typography = { ...row.typography };
+        const remapped = normalizeRow(row.raw, mapping);
+        remapped.typography = typography;
+        return remapped;
+      });
+      state.selected = Math.min(Math.max(state.selected, 0), state.rows.length - 1);
+      state.pendingImport = null;
+      els.columnMappingDialog.close();
+      renderAll();
+      showToast("CSV列の割り当てを更新しました");
       return;
     }
     const rows = pending.table.slice(1)
@@ -353,6 +372,51 @@
     return clean(header).replace(/\s+/g, "");
   }
 
+  function openColumnRemapping() {
+    if (!state.rows.length || !state.headers.length) return;
+    const presetMapping = {};
+    Object.keys(FIELDS).forEach((key) => {
+      presetMapping[key] = state.rows[0]?.fieldHeaders?.[key] || "";
+    });
+    state.pendingImport = {
+      mode: "remap",
+      headers: [...state.headers],
+      filename: state.filename
+    };
+    renderColumnMapping(state.headers, state.filename, presetMapping);
+    els.columnMappingDialog.showModal();
+  }
+
+  function addManualWork() {
+    const mapping = {};
+    Object.keys(FIELDS).forEach((key) => {
+      let header = state.rows[0]?.fieldHeaders?.[key] || findMatchingHeader(state.headers, [FIELDS[key]]);
+      if (!header) {
+        header = FIELDS[key];
+        state.headers.push(header);
+        state.rows.forEach((row) => {
+          row.raw[header] = "";
+          row.fieldHeaders[key] = header;
+        });
+      }
+      mapping[key] = header;
+    });
+    const raw = Object.fromEntries(state.headers.map((header) => [header, ""]));
+    const row = normalizeRow(raw, mapping);
+    state.rows.push(row);
+    state.selected = state.rows.length - 1;
+    state.page = "all";
+    state.query = "";
+    els.searchInput.value = "";
+    if (state.rows.length === 1) {
+      state.filename = "penelope-captions.csv";
+      activateWorkspace();
+    }
+    renderAll();
+    els.editorForm.elements.title?.focus();
+    showToast("空の作品を追加しました");
+  }
+
   function activateWorkspace() {
     els.emptyState.hidden = true;
     els.loadedView.hidden = false;
@@ -360,6 +424,7 @@
     els.workspace.classList.add("has-data");
     els.downloadCsvButton.disabled = false;
     els.printButton.disabled = false;
+    els.remapButton.hidden = false;
   }
 
   function renderAll() {
