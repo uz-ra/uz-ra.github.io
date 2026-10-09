@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=Shippori+Mincho:wght@500;600&amp;display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23151817'/%3E%3Cpath d='M17 17h30v30H17z' fill='none' stroke='%23ff99d4' stroke-width='4'/%3E%3Cpath d='M23 39l8-14 10 14' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=20261009-3" />
+    <link rel="stylesheet" href="./styles.css?v=20261009-4" />
   </head>
   <body>
     <header class="app-header">
@@ -104,6 +104,14 @@
                 <span><b>QRリンクのクエリを削除</b><small>「?」以降の追跡情報を除いてQRコードを作ります</small></span>
                 <input type="checkbox" id="stripQueryToggle" /><i aria-hidden="true"></i>
               </label>
+              <label class="toggle-field">
+                <span><b>絞り値のFを統一</b><small>絞り値から数字を抽出し、指定した文字を先頭に付けます</small></span>
+                <input type="checkbox" id="normalizeApertureToggle" checked /><i aria-hidden="true"></i>
+              </label>
+              <div class="aperture-options" id="apertureOptions">
+                <label><span>先頭文字</span><input type="text" id="aperturePrefixInput" value="ƒ" maxlength="4" aria-label="絞り値の先頭文字" /></label>
+                <label class="check-field"><input type="checkbox" id="apertureItalicToggle" /><span>先頭文字を斜体にする</span></label>
+              </div>
             </div>
           </div>
           <div class="preview-scroll" id="previewScroll">
@@ -170,6 +178,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./qrcode.min.js"></script>
-    <script src="./app.js?v=20261009-3"></script>
+    <script src="./app.js?v=20261009-4"></script>
   </body>
 </html>

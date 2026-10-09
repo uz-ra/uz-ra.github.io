@@ -56,6 +56,9 @@
     fit: false,
     typography: { ...DEFAULT_TYPOGRAPHY },
     stripQuery: false,
+    normalizeAperture: true,
+    aperturePrefix: "ƒ",
+    apertureItalic: false,
     pendingImport: null,
     filename: "penelope-captions.csv"
   };
@@ -66,6 +69,7 @@
     "editorForm", "selectedIndex", "moveUpButton", "moveDownButton", "deleteButton",
     "downloadCsvButton", "printButton", "fitButton", "previewScroll", "toast",
     "typographyButton", "typographyPanel", "typographyHeading", "resetTypographyButton", "stripQueryToggle",
+    "normalizeApertureToggle", "apertureOptions", "aperturePrefixInput", "apertureItalicToggle",
     "typographyScopeSelect", "typographyScopeHint",
     "columnMappingDialog", "columnMappingForm", "columnMappingFields", "mappingFilename",
     "cancelMappingButton", "remapButton"
@@ -161,6 +165,23 @@
     renderPages();
     showToast(state.stripQuery ? "QRリンクのクエリを削除します" : "QRリンクをそのまま使用します");
   });
+  els.normalizeApertureToggle.addEventListener("change", () => {
+    state.normalizeAperture = els.normalizeApertureToggle.checked;
+    refreshApertures();
+    syncTypographyControls();
+    savePreferences();
+    showToast(state.normalizeAperture ? `絞り値を「${state.aperturePrefix}数字」に統一します` : "絞り値を元の表記で表示します");
+  });
+  els.aperturePrefixInput.addEventListener("input", () => {
+    state.aperturePrefix = els.aperturePrefixInput.value.slice(0, 4);
+    refreshApertures();
+    savePreferences();
+  });
+  els.apertureItalicToggle.addEventListener("change", () => {
+    state.apertureItalic = els.apertureItalicToggle.checked;
+    savePreferences();
+    renderPages();
+  });
   document.addEventListener("click", (event) => {
     if (els.typographyPanel.hidden || els.typographyPanel.contains(event.target) || els.typographyButton.contains(event.target)) return;
     closeTypographyPanel();
@@ -175,7 +196,10 @@
     const input = event.target;
     if (!input.name || !(input.name in FIELDS)) return;
     const row = state.rows[state.selected];
-    row[input.name] = input.value;
+    if (input.name === "aperture") {
+      row.apertureSource = input.value;
+      row.aperture = formatAperture(input.value);
+    } else row[input.name] = input.value;
     const targetHeader = ensureFieldHeader(input.name);
     row.raw[targetHeader] = input.value;
     renderStats();
@@ -187,7 +211,7 @@
   els.editorForm.addEventListener("change", (event) => {
     if (state.selected < 0 || event.target.name !== "aperture") return;
     const row = state.rows[state.selected];
-    const normalized = normalizeAperture(event.target.value);
+    const normalized = formatAperture(row.apertureSource);
     event.target.value = normalized;
     row.aperture = normalized;
     row.raw[ensureFieldHeader("aperture")] = normalized;
@@ -317,7 +341,8 @@
       camera: clean(read("camera")),
       lens: clean(read("lens")),
       shutter: clean(read("shutter")),
-      aperture: normalizeAperture(read("aperture")),
+      apertureSource: clean(read("aperture")),
+      aperture: formatAperture(read("aperture")),
       iso: clean(read("iso")),
       typography: readTypography(raw),
       captionOverflow: false
@@ -349,11 +374,21 @@
     return clean(value).split(" / ")[0];
   }
 
-  function normalizeAperture(value) {
-    const cleaned = clean(value).normalize("NFKC");
+  function formatAperture(value) {
+    const original = clean(value);
+    if (!state.normalizeAperture) return original;
+    const cleaned = original.normalize("NFKC");
     if (!cleaned) return "";
     const number = cleaned.match(/\d+(?:\.\d+)?/);
-    return number ? `f${number[0]}` : cleaned.replace(/F/g, "f");
+    return number ? `${state.aperturePrefix}${number[0]}` : original;
+  }
+
+  function refreshApertures() {
+    state.rows.forEach((row) => { row.aperture = formatAperture(row.apertureSource ?? row.aperture); });
+    const field = els.editorForm.elements.aperture;
+    const selected = state.rows[state.selected];
+    if (field && selected) field.value = selected.aperture;
+    renderPages();
   }
 
   function suggestFieldHeader(headers, key) {
@@ -648,10 +683,15 @@
     });
     const settings = document.createElement("div");
     settings.className = "settings";
-    const values = [row.aperture, normalizeShutter(row.shutter), row.iso];
-    values.filter(Boolean).forEach((value) => {
+    const values = [["aperture", row.aperture], ["shutter", normalizeShutter(row.shutter)], ["iso", row.iso]];
+    values.filter(([, value]) => value).forEach(([key, value]) => {
       const item = document.createElement("span");
-      item.textContent = value;
+      if (key === "aperture" && state.normalizeAperture && state.aperturePrefix && value.startsWith(state.aperturePrefix)) {
+        const prefix = document.createElement("span");
+        prefix.className = `aperture-prefix${state.apertureItalic ? " italic" : ""}`;
+        prefix.textContent = state.aperturePrefix;
+        item.append(prefix, value.slice(state.aperturePrefix.length));
+      } else item.textContent = value;
       settings.append(item);
     });
     if (settings.children.length) tech.append(settings);
@@ -722,6 +762,12 @@
       if (output) output.value = `${typography[key]}%`;
     });
     els.stripQueryToggle.checked = state.stripQuery;
+    els.normalizeApertureToggle.checked = state.normalizeAperture;
+    els.aperturePrefixInput.value = state.aperturePrefix;
+    els.aperturePrefixInput.disabled = !state.normalizeAperture;
+    els.apertureItalicToggle.checked = state.apertureItalic;
+    els.apertureItalicToggle.disabled = !state.normalizeAperture;
+    els.apertureOptions.classList.toggle("disabled", !state.normalizeAperture);
   }
 
   function applyTypography(target = document.documentElement, typography = state.typography) {
@@ -751,12 +797,21 @@
         });
       }
       state.stripQuery = saved.stripQuery === true;
+      state.normalizeAperture = saved.normalizeAperture !== false;
+      state.aperturePrefix = typeof saved.aperturePrefix === "string" ? saved.aperturePrefix.slice(0, 4) : "ƒ";
+      state.apertureItalic = saved.apertureItalic === true;
     } catch {}
   }
 
   function savePreferences() {
     try {
-      localStorage.setItem("penelope-display-preferences", JSON.stringify({ typography: state.typography, stripQuery: state.stripQuery }));
+      localStorage.setItem("penelope-display-preferences", JSON.stringify({
+        typography: state.typography,
+        stripQuery: state.stripQuery,
+        normalizeAperture: state.normalizeAperture,
+        aperturePrefix: state.aperturePrefix,
+        apertureItalic: state.apertureItalic
+      }));
     } catch {}
   }
 
