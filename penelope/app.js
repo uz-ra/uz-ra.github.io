@@ -36,7 +36,10 @@
     aperture: "絞り値",
     iso: "ISO感度・フィルム名"
   };
-  const DEFAULT_TYPOGRAPHY = { title: 110, person: 110, caption: 110, tech: 110 };
+  const DEFAULT_TYPOGRAPHY = { title: 100, person: 100, caption: 100, tech: 100 };
+  const LEGACY_TYPOGRAPHY_BASE = { title: 140, person: 140, caption: 130, tech: 150 };
+  const TYPOGRAPHY_BASE_VERSION = "2";
+  const TYPOGRAPHY_BASE_HEADER = "文字サイズ基準バージョン";
   const TYPOGRAPHY_HEADERS = {
     title: "文字サイズ：作品タイトル（%）",
     person: "文字サイズ：所属・作者（%）",
@@ -324,10 +327,16 @@
   function readTypography(raw) {
     const typography = { ...DEFAULT_TYPOGRAPHY };
     const rawHeaders = Object.keys(raw);
+    const hasSavedTypography = Object.values(TYPOGRAPHY_HEADERS)
+      .some((expectedHeader) => findMatchingHeader(rawHeaders, [expectedHeader]));
+    const versionHeader = findMatchingHeader(rawHeaders, [TYPOGRAPHY_BASE_HEADER]);
+    const usesCurrentBase = !hasSavedTypography || clean(versionHeader ? raw[versionHeader] : "") === TYPOGRAPHY_BASE_VERSION;
     Object.entries(TYPOGRAPHY_HEADERS).forEach(([key, expectedHeader]) => {
       const matchingHeader = findMatchingHeader(rawHeaders, [expectedHeader]);
       const value = Number(matchingHeader ? raw[matchingHeader] : NaN);
-      if (Number.isFinite(value) && value >= 70 && value <= 150) typography[key] = value;
+      if (!Number.isFinite(value)) return;
+      const normalizedValue = usesCurrentBase ? value : value / LEGACY_TYPOGRAPHY_BASE[key] * 100;
+      if (normalizedValue >= 50 && normalizedValue <= 200) typography[key] = formatSize(normalizedValue);
     });
     return typography;
   }
@@ -717,10 +726,10 @@
 
   function applyTypography(target = document.documentElement, typography = state.typography) {
     const definitions = {
-      title: 5,
-      person: 2.55,
-      caption: 2.45,
-      tech: 2.55
+      title: 7,
+      person: 3.57,
+      caption: 3.185,
+      tech: 3.825
     };
     Object.entries(definitions).forEach(([key, millimeters]) => {
       const scale = typography[key] / 100;
@@ -738,7 +747,7 @@
       if (saved.typography) {
         Object.keys(state.typography).forEach((key) => {
           const value = Number(saved.typography[key]);
-          if (Number.isFinite(value) && value >= 70 && value <= 150) state.typography[key] = value;
+          if (Number.isFinite(value) && value >= 50 && value <= 150) state.typography[key] = value;
         });
       }
       state.stripQuery = saved.stripQuery === true;
@@ -806,6 +815,7 @@
     Object.values(TYPOGRAPHY_HEADERS).forEach((header) => {
       if (!findMatchingHeader(state.headers, [header])) state.headers.push(header);
     });
+    if (!findMatchingHeader(state.headers, [TYPOGRAPHY_BASE_HEADER])) state.headers.push(TYPOGRAPHY_BASE_HEADER);
     state.rows.forEach((row) => {
       Object.entries(FIELDS).forEach(([key, header]) => {
         const targetHeader = row.fieldHeaders[key];
@@ -815,6 +825,7 @@
         const targetHeader = findMatchingHeader(state.headers, [expectedHeader]) || expectedHeader;
         row.raw[targetHeader] = row.typography[key];
       });
+      row.raw[findMatchingHeader(state.headers, [TYPOGRAPHY_BASE_HEADER]) || TYPOGRAPHY_BASE_HEADER] = TYPOGRAPHY_BASE_VERSION;
     });
     const lines = [state.headers, ...state.rows.map((row) => state.headers.map((header) => row.raw[header] ?? ""))];
     const csv = `\uFEFF${lines.map((cells) => cells.map(csvCell).join(",")).join("\r\n")}`;
