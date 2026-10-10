@@ -40,6 +40,7 @@
   const LEGACY_TYPOGRAPHY_BASE = { title: 140, person: 140, caption: 130, tech: 150 };
   const TYPOGRAPHY_BASE_VERSION = "2";
   const TYPOGRAPHY_BASE_HEADER = "文字サイズ基準バージョン";
+  const COLUMN_MAPPING_HEADER = "Penelope列割り当て";
   const TYPOGRAPHY_HEADERS = {
     title: "文字サイズ：作品タイトル（%）",
     person: "文字サイズ：所属・作者（%）",
@@ -55,7 +56,7 @@
     page: "all",
     fit: false,
     typography: { ...DEFAULT_TYPOGRAPHY },
-    stripQuery: false,
+    stripQuery: true,
     normalizeAperture: true,
     aperturePrefix: "ƒ",
     apertureItalic: false,
@@ -243,7 +244,7 @@
       const headers = table[0].map((header) => header.trim());
       if (!headers.some(Boolean)) throw new Error("列名が見つかりません");
       state.pendingImport = { mode: "import", file, headers, table };
-      renderColumnMapping(headers, file.name);
+      renderColumnMapping(headers, file.name, readSavedColumnMapping(headers, table));
       els.columnMappingDialog.showModal();
     } catch (error) {
       showToast(error.message || "CSVを読み込めませんでした");
@@ -268,7 +269,8 @@
       select.setAttribute("aria-label", `${FIELD_LABELS[key]}に割り当てるCSV列`);
       select.add(new Option("使用しない", ""));
       headers.forEach((header) => select.add(new Option(header || "（列名なし）", header)));
-      select.value = presetMapping[key] || suggestFieldHeader(headers, key) || "";
+      const savedHeader = headers.includes(presetMapping[key]) ? presetMapping[key] : "";
+      select.value = savedHeader || suggestFieldHeader(headers, key) || "";
       label.append(name, select);
       els.columnMappingFields.append(label);
     });
@@ -364,6 +366,26 @@
       if (normalizedValue >= 50 && normalizedValue <= 200) typography[key] = formatSize(normalizedValue);
     });
     return typography;
+  }
+
+  function readSavedColumnMapping(headers, table) {
+    const mappingHeader = findMatchingHeader(headers, [COLUMN_MAPPING_HEADER]);
+    if (!mappingHeader) return {};
+    const columnIndex = headers.indexOf(mappingHeader);
+    for (const cells of table.slice(1)) {
+      const serialized = clean(cells[columnIndex]);
+      if (!serialized) continue;
+      try {
+        const mapping = JSON.parse(serialized);
+        if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)) return {};
+        return Object.fromEntries(Object.keys(FIELDS)
+          .filter((key) => typeof mapping[key] === "string" && headers.includes(mapping[key]))
+          .map((key) => [key, mapping[key]]));
+      } catch {
+        return {};
+      }
+    }
+    return {};
   }
 
   function clean(value) {
@@ -796,7 +818,7 @@
           if (Number.isFinite(value) && value >= 50 && value <= 150) state.typography[key] = value;
         });
       }
-      state.stripQuery = saved.stripQuery === true;
+      state.stripQuery = saved.stripQuery !== false;
       state.normalizeAperture = saved.normalizeAperture !== false;
       state.aperturePrefix = typeof saved.aperturePrefix === "string" ? saved.aperturePrefix.slice(0, 4) : "ƒ";
       state.apertureItalic = saved.apertureItalic === true;
@@ -871,6 +893,7 @@
       if (!findMatchingHeader(state.headers, [header])) state.headers.push(header);
     });
     if (!findMatchingHeader(state.headers, [TYPOGRAPHY_BASE_HEADER])) state.headers.push(TYPOGRAPHY_BASE_HEADER);
+    if (!findMatchingHeader(state.headers, [COLUMN_MAPPING_HEADER])) state.headers.push(COLUMN_MAPPING_HEADER);
     state.rows.forEach((row) => {
       Object.entries(FIELDS).forEach(([key, header]) => {
         const targetHeader = row.fieldHeaders[key];
@@ -881,6 +904,7 @@
         row.raw[targetHeader] = row.typography[key];
       });
       row.raw[findMatchingHeader(state.headers, [TYPOGRAPHY_BASE_HEADER]) || TYPOGRAPHY_BASE_HEADER] = TYPOGRAPHY_BASE_VERSION;
+      row.raw[findMatchingHeader(state.headers, [COLUMN_MAPPING_HEADER]) || COLUMN_MAPPING_HEADER] = JSON.stringify(row.fieldHeaders);
     });
     const lines = [state.headers, ...state.rows.map((row) => state.headers.map((header) => row.raw[header] ?? ""))];
     const csv = `\uFEFF${lines.map((cells) => cells.map(csvCell).join(",")).join("\r\n")}`;
