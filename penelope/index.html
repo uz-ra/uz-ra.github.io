@@ -152,8 +152,9 @@
           <label class="field wide"><span>Exif情報の取得</span><select name="exifConsent"><option value="">指定なし</option><option value="はい">はい</option><option value="いいえ">いいえ</option></select></label>
           <label class="field wide"><span>作品画像のリンク</span><input name="imageLink" type="text" /></label>
           <div class="exif-panel" id="exifPanel" hidden>
-            <p>CSVで空欄の撮影情報を画像のExifから補完できます。画像はブラウザ内だけで読み取ります。</p>
+            <p>画像リンクからExifを自動取得し、撮影情報の空欄だけを補完します。取得できない場合は手動で画像を選べます。</p>
             <div class="exif-links" id="imageLinks"></div>
+            <p id="exifStatus" class="exif-status" role="status" aria-live="polite"></p>
             <label class="button compact exif-picker">画像を選んでExifを確認<input id="exifFileInput" type="file" accept=".jpg,.jpeg,.tif,.tiff,image/jpeg,image/tiff" hidden /></label>
             <div id="exifResult" class="exif-result" aria-live="polite"></div>
             <button class="button compact" type="button" id="applyExifButton" disabled>空欄に反映する</button>
@@ -187,6 +188,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./qrcode.min.js"></script>
-    <script src="./app.js?v=20261027-1"></script>
+    <script src="./app.js?v=20261027-2"></script>
   </body>
 </html>

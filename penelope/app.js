@@ -78,7 +78,7 @@
     "typographyScopeSelect", "typographyScopeHint",
     "columnMappingDialog", "columnMappingForm", "columnMappingFields", "mappingFilename",
     "cancelMappingButton", "remapButton", "exifPanel", "imageLinks", "exifFileInput",
-    "exifResult", "applyExifButton"
+    "exifResult", "applyExifButton", "exifStatus"
   ].map((id) => [id, document.getElementById(id)]));
 
   loadPreferences();
@@ -214,7 +214,13 @@
     } else row[input.name] = input.value;
     if (input.name === "exifConsent" || input.name === "imageLink") {
       row.exifCandidate = null;
+      row.exifFetchToken = (row.exifFetchToken || 0) + 1;
+      row.exifStatus = null;
       renderExifPanel();
+      clearTimeout(row.exifTimer);
+      row.exifTimer = setTimeout(() => {
+        if (wantsExif(row) && EXIF_FIELDS.some((key) => !clean(row[key]))) fetchExifForRow(row);
+      }, 500);
     }
     const targetHeader = ensureFieldHeader(input.name);
     row.raw[targetHeader] = input.value;
@@ -225,6 +231,11 @@
   });
 
   els.editorForm.addEventListener("change", (event) => {
+    if (state.selected >= 0 && (event.target.name === "exifConsent" || event.target.name === "imageLink")) {
+      const row = state.rows[state.selected];
+      clearTimeout(row.exifTimer);
+      if (wantsExif(row) && EXIF_FIELDS.some((key) => !clean(row[key]))) fetchExifForRow(row);
+    }
     if (state.selected < 0 || event.target.name !== "aperture") return;
     const row = state.rows[state.selected];
     const normalized = formatAperture(row.apertureSource);
@@ -315,6 +326,7 @@
       state.pendingImport = null;
       els.columnMappingDialog.close();
       renderAll();
+      autoFetchExifRows();
       showToast("CSV列の割り当てを更新しました");
       return;
     }
@@ -339,6 +351,7 @@
     els.columnMappingDialog.close();
     activateWorkspace();
     renderAll();
+    autoFetchExifRows();
     showToast(`${rows.length}作品を読み込みました`);
   }
 
@@ -364,6 +377,8 @@
       exifConsent: clean(read("exifConsent")),
       imageLink: clean(read("imageLink")),
       exifCandidate: null,
+      exifStatus: null,
+      exifFetchToken: 0,
       typography: readTypography(raw),
       captionOverflow: false
     };
@@ -610,6 +625,89 @@
       els.exifResult.append(summary);
     }
     els.applyExifButton.disabled = !available.length;
+    els.exifStatus.textContent = row.exifStatus?.text || (els.imageLinks.children.length ? "画像リンクを自動確認します。取得できない場合は画像を手動で選んでください。" : "画像リンクがありません。画像を手動で選んでください。");
+    els.exifStatus.classList.toggle("warning", row.exifStatus?.state === "error");
+  }
+
+  function autoFetchExifRows() {
+    state.rows.filter((row) => wantsExif(row) && EXIF_FIELDS.some((key) => !clean(row[key])))
+      .forEach((row) => { fetchExifForRow(row); });
+  }
+
+  function imageUrls(row) {
+    return clean(row.imageLink).split(/\s*,\s*/).filter(Boolean).flatMap((value) => {
+      try {
+        const url = new URL(value);
+        if (url.protocol !== "https:" || /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[|.*\.local$)/i.test(url.hostname)) return [];
+        if (url.hostname === "drive.google.com") {
+          const match = url.pathname.match(/^\/file\/d\/([^/]+)/);
+          const id = url.searchParams.get("id") || match?.[1];
+          if (id) return [
+            `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`,
+            `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download`
+          ];
+        }
+        return [url.href];
+      } catch { return []; }
+    });
+  }
+
+  async function fetchExifForRow(row) {
+    const urls = imageUrls(row);
+    if (!urls.length || !wantsExif(row)) return;
+    const token = row.exifFetchToken = (row.exifFetchToken || 0) + 1;
+    row.exifStatus = { state: "loading", text: "画像リンクからExifを自動取得しています…" };
+    if (state.rows[state.selected] === row) renderExifPanel();
+    let downloaded = false;
+    for (const url of urls) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        const response = await fetch(url, { mode: "cors", credentials: "omit", signal: controller.signal });
+        if (!response.ok) continue;
+        if (/text\/html/i.test(response.headers.get("content-type") || "")) continue;
+        const contentLength = Number(response.headers.get("content-length"));
+        if (contentLength > 80 * 1024 * 1024) continue;
+        const buffer = await response.arrayBuffer();
+        if (buffer.byteLength > 80 * 1024 * 1024) continue;
+        downloaded = true;
+        let values;
+        try { values = readExif(buffer); } catch { continue; }
+        if (token !== row.exifFetchToken || !state.rows.includes(row) || !wantsExif(row)) return;
+        const count = fillEmptyExifFields(row, values);
+        row.exifStatus = { state: "success", text: `画像からExifを自動取得し、空欄の${count}項目を補完しました。` };
+        renderStats();
+        renderList();
+        renderPages();
+        if (state.rows[state.selected] === row) renderEditor();
+        return;
+      } catch {
+        // A private Drive link or a cross-origin browser restriction can both block fetch.
+      } finally { clearTimeout(timer); }
+    }
+    if (token !== row.exifFetchToken || !state.rows.includes(row)) return;
+    row.exifStatus = downloaded
+      ? { state: "no-exif", text: "画像は取得できましたが、対応するExif情報は見つかりませんでした。" }
+      : { state: "error", text: "画像をダウンロードできませんでした。フォルダの権限を「リンクを知っている全員」にしてください。すでに公開済みならブラウザのアクセス制限の可能性があるため、画像を手動で選んでください。" };
+    renderStats();
+    renderList();
+    if (state.rows[state.selected] === row) renderExifPanel();
+  }
+
+  function fillEmptyExifFields(row, values) {
+    let count = 0;
+    EXIF_FIELDS.forEach((key) => {
+      const value = clean(values[key]);
+      if (!value || clean(row[key])) return;
+      row[key] = key === "aperture" ? formatAperture(value) : value;
+      if (key === "aperture") row.apertureSource = value;
+      const targetHeader = row.fieldHeaders[key] || FIELDS[key];
+      if (!state.headers.includes(targetHeader)) state.headers.push(targetHeader);
+      row.fieldHeaders[key] = targetHeader;
+      row.raw[targetHeader] = value;
+      count += 1;
+    });
+    return count;
   }
 
   async function inspectExifFile(file) {
@@ -633,16 +731,9 @@
   function applyExifValues() {
     const row = state.rows[state.selected];
     if (!row || !wantsExif(row) || !row.exifCandidate) return;
-    let count = 0;
-    EXIF_FIELDS.forEach((key) => {
-      const value = clean(row.exifCandidate.values[key]);
-      if (!value || clean(row[key])) return;
-      row[key] = key === "aperture" ? formatAperture(value) : value;
-      if (key === "aperture") row.apertureSource = value;
-      row.raw[ensureFieldHeader(key)] = value;
-      count += 1;
-    });
+    const count = fillEmptyExifFields(row, row.exifCandidate.values);
     row.exifCandidate = null;
+    row.exifStatus = { state: "success", text: `手動で選んだ画像から、空欄の${count}項目を補完しました。` };
     renderAll();
     pulseSaved();
     showToast(`${count}項目を空欄に反映しました`);
@@ -774,6 +865,7 @@
     if (!row.author) warnings.push("表記名が未入力です");
     if (row.captionOverflow) warnings.push("キャプションが…で見切れています");
     if (/^\d+$/.test(row.iso)) warnings.push("ISOが数字だけです");
+    if (row.exifStatus?.state === "error") warnings.push("画像をダウンロードできませんでした。フォルダの権限を「リンクを知っている全員」にしてください");
     return warnings;
   }
 

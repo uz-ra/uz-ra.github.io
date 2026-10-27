@@ -172,6 +172,8 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .exif-links a { color: #9c286c; overflow-wrap: anywhere; }
 .exif-picker { display: inline-flex; cursor: pointer; margin-bottom: 8px; }
 .exif-result { overflow-wrap: anywhere; }
+.exif-status { color: #555; }
+.exif-status.warning { padding: 8px; border-left: 3px solid #c0506c; background: #fff2f5; color: #8a2342; }
 .exif-panel button:disabled { opacity: .45; cursor: not-allowed; }
 .field input { height: 38px; }
 .field textarea { resize: vertical; min-height: 105px; line-height: 1.65; }
