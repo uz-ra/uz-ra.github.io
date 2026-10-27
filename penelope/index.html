@@ -155,6 +155,9 @@
             <p>画像リンクからExifを自動取得し、撮影情報の空欄だけを補完します。取得できない場合は手動で画像を選べます。</p>
             <div class="exif-links" id="imageLinks"></div>
             <p id="exifStatus" class="exif-status" role="status" aria-live="polite"></p>
+            <label class="check-field"><input type="checkbox" id="localExifToggle" />このMacの補助プログラムを使う</label>
+            <p>補助プログラムの起動中はDrive画像を自動取得できます。</p>
+            <button class="button compact" type="button" id="retryExifButton">画像リンクから再取得</button>
             <label class="button compact exif-picker">画像を選んでExifを確認<input id="exifFileInput" type="file" accept=".jpg,.jpeg,.tif,.tiff,image/jpeg,image/tiff" hidden /></label>
             <div id="exifResult" class="exif-result" aria-live="polite"></div>
             <button class="button compact" type="button" id="applyExifButton" disabled>空欄に反映する</button>
@@ -188,6 +191,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./qrcode.min.js"></script>
-    <script src="./app.js?v=20261027-2"></script>
+    <script src="./app.js?v=20261027-3"></script>
   </body>
 </html>

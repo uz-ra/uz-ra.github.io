@@ -64,6 +64,7 @@
     normalizeAperture: true,
     aperturePrefix: "ƒ",
     apertureItalic: false,
+    localExifBridge: false,
     pendingImport: null,
     filename: "penelope-captions.csv"
   };
@@ -78,7 +79,7 @@
     "typographyScopeSelect", "typographyScopeHint",
     "columnMappingDialog", "columnMappingForm", "columnMappingFields", "mappingFilename",
     "cancelMappingButton", "remapButton", "exifPanel", "imageLinks", "exifFileInput",
-    "exifResult", "applyExifButton", "exifStatus"
+    "exifResult", "applyExifButton", "exifStatus", "localExifToggle", "retryExifButton"
   ].map((id) => [id, document.getElementById(id)]));
 
   loadPreferences();
@@ -106,6 +107,15 @@
     if (file) await inspectExifFile(file);
   });
   els.applyExifButton.addEventListener("click", applyExifValues);
+  els.localExifToggle.addEventListener("change", () => {
+    state.localExifBridge = els.localExifToggle.checked;
+    savePreferences();
+    autoFetchExifRows();
+  });
+  els.retryExifButton.addEventListener("click", () => {
+    const row = state.rows[state.selected];
+    if (row) fetchExifForRow(row);
+  });
 
   els.searchInput.addEventListener("input", (event) => {
     state.query = event.target.value.trim().toLowerCase();
@@ -603,6 +613,8 @@
     const row = state.rows[state.selected];
     els.exifPanel.hidden = !row || !wantsExif(row);
     if (!row || !wantsExif(row)) return;
+    els.localExifToggle.checked = state.localExifBridge;
+    els.retryExifButton.disabled = row.exifStatus?.state === "loading";
     els.imageLinks.replaceChildren();
     clean(row.imageLink).split(/\s*,\s*/).filter(Boolean).forEach((value, index) => {
       try {
@@ -639,13 +651,18 @@
       try {
         const url = new URL(value);
         if (url.protocol !== "https:" || /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[|.*\.local$)/i.test(url.hostname)) return [];
-        if (url.hostname === "drive.google.com") {
+        if (url.hostname === "drive.google.com" || url.hostname === "drive.usercontent.google.com") {
           const match = url.pathname.match(/^\/file\/d\/([^/]+)/);
           const id = url.searchParams.get("id") || match?.[1];
-          if (id) return [
-            `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`,
-            `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download`
-          ];
+          if (id) {
+            const key = url.searchParams.get("resourcekey");
+            const query = `id=${encodeURIComponent(id)}${key ? `&resourcekey=${encodeURIComponent(key)}` : ""}`;
+            return [
+              ...(state.localExifBridge ? [`http://127.0.0.1:8769/drive-image?${query}`] : []),
+              `https://drive.usercontent.google.com/download?${query}&export=download`,
+              `https://drive.google.com/uc?export=download&${query}`
+            ];
+          }
         }
         return [url.href];
       } catch { return []; }
@@ -661,10 +678,13 @@
     let downloaded = false;
     for (const url of urls) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
+      const timer = setTimeout(() => controller.abort(), 35000);
       try {
         const response = await fetch(url, { mode: "cors", credentials: "omit", signal: controller.signal });
-        if (!response.ok) continue;
+        if (!response.ok) {
+          console.warn("Exif download failed", new URL(url).hostname, response.status);
+          continue;
+        }
         if (/text\/html/i.test(response.headers.get("content-type") || "")) continue;
         const contentLength = Number(response.headers.get("content-length"));
         if (contentLength > 80 * 1024 * 1024) continue;
@@ -681,14 +701,15 @@
         renderPages();
         if (state.rows[state.selected] === row) renderEditor();
         return;
-      } catch {
+      } catch (error) {
+        console.warn("Exif download failed", new URL(url).hostname, error.message);
         // A private Drive link or a cross-origin browser restriction can both block fetch.
       } finally { clearTimeout(timer); }
     }
     if (token !== row.exifFetchToken || !state.rows.includes(row)) return;
     row.exifStatus = downloaded
       ? { state: "no-exif", text: "画像は取得できましたが、対応するExif情報は見つかりませんでした。" }
-      : { state: "error", text: "画像をダウンロードできませんでした。フォルダの権限を「リンクを知っている全員」にしてください。すでに公開済みならブラウザのアクセス制限の可能性があるため、画像を手動で選んでください。" };
+      : { state: "error", text: "画像をダウンロードできませんでした。フォルダの権限を「リンクを知っている全員」にしてください（閲覧権限で十分です）。公開済みなら、このMacの補助プログラムを起動して再取得するか、画像を手動で選んでください。" };
     renderStats();
     renderList();
     if (state.rows[state.selected] === row) renderExifPanel();
@@ -982,7 +1003,7 @@
   }
 
   function normalizeShutter(value) {
-    if (!value || /s$/i.test(value) || /不明|おそめ|-/.test(value)) return value;
+    if (!value || !/[0-9０-９]$/.test(value) || /不明|おそめ|-/.test(value)) return value;
     return `${value}s`;
   }
 
@@ -1082,6 +1103,7 @@
       state.normalizeAperture = saved.normalizeAperture !== false;
       state.aperturePrefix = typeof saved.aperturePrefix === "string" ? saved.aperturePrefix.slice(0, 4) : "ƒ";
       state.apertureItalic = saved.apertureItalic === true;
+      state.localExifBridge = saved.localExifBridge === true;
     } catch {}
   }
 
@@ -1092,7 +1114,8 @@
         stripQuery: state.stripQuery,
         normalizeAperture: state.normalizeAperture,
         aperturePrefix: state.aperturePrefix,
-        apertureItalic: state.apertureItalic
+        apertureItalic: state.apertureItalic,
+        localExifBridge: state.localExifBridge
       }));
     } catch {}
   }
