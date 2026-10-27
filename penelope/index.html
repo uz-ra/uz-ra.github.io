@@ -22,6 +22,7 @@
         CSVはブラウザ内だけで処理されます
       </div>
       <div class="header-actions">
+        <button class="button ghost" type="button" id="transferButton" disabled>補助画面へ編集中データを移す</button>
         <button class="button ghost" type="button" id="downloadCsvButton" disabled>CSVを書き出す</button>
         <button class="button primary" type="button" id="printButton" disabled>PDF / 印刷</button>
       </div>
@@ -156,7 +157,7 @@
             <div class="exif-links" id="imageLinks"></div>
             <p id="exifStatus" class="exif-status" role="status" aria-live="polite"></p>
             <label class="check-field"><input type="checkbox" id="localExifToggle" />このMacの補助プログラムを使う</label>
-            <p>補助プログラム起動後、<a href="http://127.0.0.1:8769/" target="_blank" rel="noopener">自動取得対応の編集画面</a>を開いてCSVを読み込んでください。編集中の内容はCSVに保存して移せます。</p>
+            <p>公開画面で「補助画面へ編集中データを移す」を押すと、作品と列割り当てを引き継げます。</p>
             <button class="button compact" type="button" id="retryExifButton">画像リンクから再取得</button>
             <label class="button compact exif-picker">画像を選んでExifを確認<input id="exifFileInput" type="file" accept=".jpg,.jpeg,.tif,.tiff,image/jpeg,image/tiff" hidden /></label>
             <div id="exifResult" class="exif-result" aria-live="polite"></div>
@@ -191,6 +192,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./qrcode.min.js"></script>
-    <script src="./app.js?v=20261027-4"></script>
+    <script src="./app.js?v=20261027-5"></script>
   </body>
 </html>

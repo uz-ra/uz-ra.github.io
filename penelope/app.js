@@ -79,11 +79,21 @@
     "typographyScopeSelect", "typographyScopeHint",
     "columnMappingDialog", "columnMappingForm", "columnMappingFields", "mappingFilename",
     "cancelMappingButton", "remapButton", "exifPanel", "imageLinks", "exifFileInput",
-    "exifResult", "applyExifButton", "exifStatus", "localExifToggle", "retryExifButton"
+    "exifResult", "applyExifButton", "exifStatus", "localExifToggle", "retryExifButton", "transferButton"
   ].map((id) => [id, document.getElementById(id)]));
 
   loadPreferences();
   applyTypography();
+  const LOCAL_EDITOR_ORIGIN = "http://127.0.0.1:8769";
+  const PUBLIC_EDITOR_ORIGIN = "https://uz-ra.github.io";
+  const isLocalEditor = location.origin === LOCAL_EDITOR_ORIGIN;
+  els.transferButton.hidden = isLocalEditor;
+  let handoffWindow = null;
+  let handoffTimer = null;
+  window.addEventListener("message", handleHandoffMessage);
+  if (isLocalEditor && window.opener) {
+    window.opener.postMessage({ type: "penelope-ready", version: 1 }, PUBLIC_EDITOR_ORIGIN);
+  }
 
   const previewResizeObserver = typeof ResizeObserver === "function" ? new ResizeObserver(updatePreviewScale) : null;
   previewResizeObserver?.observe(els.previewScroll);
@@ -101,6 +111,7 @@
     button.addEventListener("click", addManualWork);
   });
   els.remapButton.addEventListener("click", openColumnRemapping);
+  els.transferButton.addEventListener("click", openLocalEditorWithData);
   els.exifFileInput.addEventListener("change", async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -532,8 +543,93 @@
     els.inspector.hidden = false;
     els.workspace.classList.add("has-data");
     els.downloadCsvButton.disabled = false;
+    els.transferButton.disabled = false;
     els.printButton.disabled = false;
     els.remapButton.hidden = false;
+  }
+
+  function openLocalEditorWithData() {
+    if (!state.rows.length || isLocalEditor) return;
+    handoffWindow = window.open(`${LOCAL_EDITOR_ORIGIN}/`, "_blank");
+    if (!handoffWindow) {
+      showToast("補助画面を開けませんでした。ポップアップを許可して再試行してください");
+      return;
+    }
+    clearTimeout(handoffTimer);
+    handoffTimer = setTimeout(() => {
+      if (handoffWindow) showToast("補助画面との接続を確認できませんでした。補助プログラムの起動を確認してください");
+    }, 15000);
+  }
+
+  function handoffSnapshot() {
+    return {
+      type: "penelope-data", version: 1,
+      headers: [...state.headers],
+      rows: state.rows.map((row) => ({
+        raw: { ...row.raw }, fieldHeaders: { ...row.fieldHeaders },
+        typography: { ...row.typography },
+        values: Object.fromEntries([...Object.keys(FIELDS), "apertureSource"]
+          .map((key) => [key, row[key] ?? ""]))
+      })),
+      selected: state.selected, page: state.page, filename: state.filename,
+      preferences: {
+        stripQuery: state.stripQuery,
+        normalizeAperture: state.normalizeAperture,
+        aperturePrefix: state.aperturePrefix,
+        apertureItalic: state.apertureItalic
+      }
+    };
+  }
+
+  function handleHandoffMessage(event) {
+    if (!isLocalEditor && event.origin === LOCAL_EDITOR_ORIGIN && event.source === handoffWindow) {
+      if (event.data?.type === "penelope-ready" && event.data.version === 1) {
+        handoffWindow.postMessage(handoffSnapshot(), LOCAL_EDITOR_ORIGIN);
+      } else if (event.data?.type === "penelope-applied") {
+        clearTimeout(handoffTimer);
+        handoffWindow = null;
+        showToast("補助画面へ編集中データを移しました");
+      }
+      return;
+    }
+    if (!isLocalEditor || event.origin !== PUBLIC_EDITOR_ORIGIN || event.source !== window.opener || event.data?.type !== "penelope-data") return;
+    const payload = event.data;
+    if (payload.version !== 1 || !Array.isArray(payload.headers) || !Array.isArray(payload.rows)
+      || !payload.rows.length || payload.rows.length > 1000 || payload.headers.length > 500
+      || payload.headers.some((header) => typeof header !== "string")) return;
+    state.stripQuery = payload.preferences?.stripQuery !== false;
+    state.normalizeAperture = payload.preferences?.normalizeAperture !== false;
+    state.aperturePrefix = typeof payload.preferences?.aperturePrefix === "string" ? payload.preferences.aperturePrefix.slice(0, 4) : "ƒ";
+    state.apertureItalic = payload.preferences?.apertureItalic === true;
+    state.localExifBridge = true;
+    state.headers = [...payload.headers];
+    state.rows = payload.rows.map((source) => {
+      const raw = Object.fromEntries(state.headers.map((header) => [header, String(source?.raw?.[header] ?? "")]));
+      const mapping = Object.fromEntries(Object.keys(FIELDS).map((key) => [key,
+        state.headers.includes(source?.fieldHeaders?.[key]) ? source.fieldHeaders[key] : ""]));
+      const row = normalizeRow(raw, mapping);
+      [...Object.keys(FIELDS), "apertureSource"].forEach((key) => {
+        if (typeof source?.values?.[key] === "string") row[key] = source.values[key];
+      });
+      Object.keys(DEFAULT_TYPOGRAPHY).forEach((key) => {
+        const size = Number(source?.typography?.[key]);
+        if (Number.isFinite(size) && size >= 50 && size <= 200) row.typography[key] = size;
+      });
+      row.aperture = formatAperture(row.apertureSource);
+      return row;
+    });
+    state.selected = Number.isInteger(payload.selected) ? Math.max(0, Math.min(payload.selected, state.rows.length - 1)) : 0;
+    state.page = payload.page === "all" || /^\d+$/.test(String(payload.page)) ? String(payload.page) : "all";
+    state.filename = typeof payload.filename === "string" ? payload.filename : "penelope-captions.csv";
+    state.query = "";
+    els.searchInput.value = "";
+    savePreferences();
+    activateWorkspace();
+    renderAll();
+    syncTypographyControls();
+    autoFetchExifRows();
+    event.source.postMessage({ type: "penelope-applied", version: 1 }, PUBLIC_EDITOR_ORIGIN);
+    showToast(`${state.rows.length}作品を引き継ぎました`);
   }
 
   function renderAll() {
