@@ -18,11 +18,12 @@
     exifConsent: "画像のExifから情報を取得する",
     imageLink: "作品データのアップロードをお願いします（作品毎） / Image film"
   };
-  const AUTHOR_HEADERS = [
-    FIELDS.author,
-    "表示する名前 / Written name",
-    "表示する名前"
-  ];
+  const FIELD_HEADER_ALIASES = {
+    author: ["表示する名前 / Written name", "表示する名前", "表記する名前"],
+    university: ["大学 / University"],
+    grade: ["学年 / 卒業年度"],
+    sns: ["SNSリンク(QR)"]
+  };
   const FIELD_LABELS = {
     title: "作品タイトル",
     author: "表記する名前",
@@ -468,7 +469,7 @@
   }
 
   function suggestFieldHeader(headers, key) {
-    return findMatchingHeader(headers, key === "author" ? AUTHOR_HEADERS : [FIELDS[key]]) || "";
+    return findMatchingHeader(headers, [FIELDS[key], ...(FIELD_HEADER_ALIASES[key] || [])]) || "";
   }
 
   function ensureFieldHeader(key) {
