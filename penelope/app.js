@@ -1103,7 +1103,7 @@
       state.normalizeAperture = saved.normalizeAperture !== false;
       state.aperturePrefix = typeof saved.aperturePrefix === "string" ? saved.aperturePrefix.slice(0, 4) : "ƒ";
       state.apertureItalic = saved.apertureItalic === true;
-      state.localExifBridge = saved.localExifBridge === true;
+      state.localExifBridge = location.origin === "http://127.0.0.1:8769" || saved.localExifBridge === true;
     } catch {}
   }
 

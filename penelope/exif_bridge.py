@@ -5,10 +5,19 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 PORT = 8769
 MAX_BYTES = 80 * 1024 * 1024
-ALLOWED_ORIGINS = {"https://uz-ra.github.io", "http://127.0.0.1:8768"}
+LOCAL_ORIGIN = f"http://127.0.0.1:{PORT}"
+ALLOWED_ORIGINS = {"https://uz-ra.github.io", "http://127.0.0.1:8768", LOCAL_ORIGIN}
+ROOT = Path(__file__).resolve().parent
+ASSETS = ROOT / "dist" if (ROOT / "dist" / "index.html").is_file() else ROOT
+STATIC_FILES = {"/": ("index.html", "text/html; charset=utf-8"),
+                "/index.html": ("index.html", "text/html; charset=utf-8"),
+                "/app.js": ("app.js", "application/javascript"),
+                "/styles.css": ("styles.css", "text/css"),
+                "/qrcode.min.js": ("qrcode.min.js", "application/javascript")}
 
 
 class GoogleRedirects(urllib.request.HTTPRedirectHandler):
@@ -24,13 +33,15 @@ class Handler(BaseHTTPRequestHandler):
         pass  # Image IDs and filenames should not appear in logs.
 
     def allowed(self):
-        return (self.headers.get("Origin") in ALLOWED_ORIGINS
+        same_origin = (not self.headers.get("Origin")
+                       and self.headers.get("Referer", "").startswith(LOCAL_ORIGIN + "/"))
+        return ((self.headers.get("Origin") in ALLOWED_ORIGINS or same_origin)
                 and self.headers.get("Host") == f"127.0.0.1:{PORT}")
 
     def reply(self, status, data, content_type="application/json"):
         self.send_response(status)
         if self.allowed():
-            self.send_header("Access-Control-Allow-Origin", self.headers["Origin"])
+            self.send_header("Access-Control-Allow-Origin", self.headers.get("Origin", LOCAL_ORIGIN))
             self.send_header("Access-Control-Allow-Private-Network", "true")
         self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
         self.send_header("Vary", "Origin")
@@ -47,10 +58,14 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(204 if self.allowed() else 403, b"")
 
     def do_GET(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        if parsed.path in STATIC_FILES and self.headers.get("Host") == f"127.0.0.1:{PORT}":
+            filename, content_type = STATIC_FILES[parsed.path]
+            self.reply(200, (ASSETS / filename).read_bytes(), content_type)
+            return
         if not self.allowed():
             self.reply(403, b'{"error":"origin not allowed"}')
             return
-        parsed = urllib.parse.urlsplit(self.path)
         if parsed.path == "/health":
             self.reply(200, b'{"service":"penelope-exif-bridge"}')
             return
@@ -80,7 +95,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"Penelope Exif補助を起動しました: http://127.0.0.1:{PORT}", flush=True)
-    print("Penelopeで「このMacの補助プログラムを使う」をオンにしてください。終了: Ctrl+C", flush=True)
+    print(f"自動取得対応の編集画面: {LOCAL_ORIGIN}/   終了: Ctrl+C", flush=True)
     try:
         ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
     except KeyboardInterrupt:
