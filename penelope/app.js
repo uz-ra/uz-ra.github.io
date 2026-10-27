@@ -14,7 +14,9 @@
     lens: "使用レンズ / Lens",
     shutter: "シャッタースピード / Shutter Speed",
     aperture: "絞り値 / Aperture",
-    iso: "ISO感度（使用フィルム） / ISO(Film name)"
+    iso: "ISO感度（使用フィルム） / ISO(Film name)",
+    exifConsent: "画像のExifから情報を取得する",
+    imageLink: "作品データのアップロードをお願いします（作品毎） / Image film"
   };
   const AUTHOR_HEADERS = [
     FIELDS.author,
@@ -34,7 +36,9 @@
     lens: "使用レンズ",
     shutter: "シャッタースピード",
     aperture: "絞り値",
-    iso: "ISO感度・フィルム名"
+    iso: "ISO感度・フィルム名",
+    exifConsent: "画像のExifから情報を取得する",
+    imageLink: "作品画像のリンク"
   };
   const DEFAULT_TYPOGRAPHY = { title: 100, person: 100, caption: 100, tech: 100 };
   const LEGACY_TYPOGRAPHY_BASE = { title: 140, person: 140, caption: 130, tech: 150 };
@@ -73,7 +77,8 @@
     "normalizeApertureToggle", "apertureOptions", "aperturePrefixInput", "apertureItalicToggle",
     "typographyScopeSelect", "typographyScopeHint",
     "columnMappingDialog", "columnMappingForm", "columnMappingFields", "mappingFilename",
-    "cancelMappingButton", "remapButton"
+    "cancelMappingButton", "remapButton", "exifPanel", "imageLinks", "exifFileInput",
+    "exifResult", "applyExifButton"
   ].map((id) => [id, document.getElementById(id)]));
 
   loadPreferences();
@@ -83,7 +88,7 @@
   previewResizeObserver?.observe(els.previewScroll);
   window.addEventListener("resize", updatePreviewScale);
 
-  document.querySelectorAll('input[type="file"]').forEach((input) => {
+  document.querySelectorAll('input[type="file"][accept*="csv"]').forEach((input) => {
     input.addEventListener("change", (event) => {
       const file = event.target.files?.[0];
       if (file) loadFile(file);
@@ -95,6 +100,12 @@
     button.addEventListener("click", addManualWork);
   });
   els.remapButton.addEventListener("click", openColumnRemapping);
+  els.exifFileInput.addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) await inspectExifFile(file);
+  });
+  els.applyExifButton.addEventListener("click", applyExifValues);
 
   els.searchInput.addEventListener("input", (event) => {
     state.query = event.target.value.trim().toLowerCase();
@@ -201,6 +212,10 @@
       row.apertureSource = input.value;
       row.aperture = formatAperture(input.value);
     } else row[input.name] = input.value;
+    if (input.name === "exifConsent" || input.name === "imageLink") {
+      row.exifCandidate = null;
+      renderExifPanel();
+    }
     const targetHeader = ensureFieldHeader(input.name);
     row.raw[targetHeader] = input.value;
     renderStats();
@@ -346,6 +361,9 @@
       apertureSource: clean(read("aperture")),
       aperture: formatAperture(read("aperture")),
       iso: clean(read("iso")),
+      exifConsent: clean(read("exifConsent")),
+      imageLink: clean(read("imageLink")),
+      exifCandidate: null,
       typography: readTypography(raw),
       captionOverflow: false
     };
@@ -557,6 +575,156 @@
     });
     els.moveUpButton.disabled = state.selected === 0;
     els.moveDownButton.disabled = state.selected === state.rows.length - 1;
+    renderExifPanel();
+  }
+
+  const EXIF_FIELDS = ["shutter", "aperture", "iso", "camera", "lens"];
+
+  function wantsExif(row) {
+    return /^(はい|yes|true|1)$/i.test(clean(row.exifConsent));
+  }
+
+  function renderExifPanel() {
+    const row = state.rows[state.selected];
+    els.exifPanel.hidden = !row || !wantsExif(row);
+    if (!row || !wantsExif(row)) return;
+    els.imageLinks.replaceChildren();
+    clean(row.imageLink).split(/\s*,\s*/).filter(Boolean).forEach((value, index) => {
+      try {
+        const url = new URL(value);
+        if (!/^https?:$/.test(url.protocol)) return;
+        const link = document.createElement("a");
+        link.href = url.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = `画像リンク ${index + 1}を開く ↗`;
+        els.imageLinks.append(link);
+      } catch {}
+    });
+    const candidate = row.exifCandidate;
+    const available = candidate ? EXIF_FIELDS.filter((key) => !clean(row[key]) && clean(candidate.values[key])) : [];
+    els.exifResult.replaceChildren();
+    if (candidate) {
+      const summary = document.createElement("p");
+      summary.textContent = `${candidate.filename}：${available.length ? available.map((key) => `${FIELD_LABELS[key]} ${candidate.values[key]}`).join(" / ") : "反映できる空欄のExif情報はありません"}`;
+      els.exifResult.append(summary);
+    }
+    els.applyExifButton.disabled = !available.length;
+  }
+
+  async function inspectExifFile(file) {
+    const row = state.rows[state.selected];
+    if (!row || !wantsExif(row)) return;
+    try {
+      const values = readExif(await file.arrayBuffer());
+      if (!state.rows.includes(row)) return;
+      row.exifCandidate = { filename: file.name, values };
+      if (state.rows[state.selected] === row) renderExifPanel();
+      showToast("Exif情報を読み取りました。内容を確認して反映してください");
+    } catch (error) {
+      if (state.rows[state.selected] === row) {
+        row.exifCandidate = null;
+        renderExifPanel();
+      }
+      showToast(error.message || "Exifを読み取れませんでした");
+    }
+  }
+
+  function applyExifValues() {
+    const row = state.rows[state.selected];
+    if (!row || !wantsExif(row) || !row.exifCandidate) return;
+    let count = 0;
+    EXIF_FIELDS.forEach((key) => {
+      const value = clean(row.exifCandidate.values[key]);
+      if (!value || clean(row[key])) return;
+      row[key] = key === "aperture" ? formatAperture(value) : value;
+      if (key === "aperture") row.apertureSource = value;
+      row.raw[ensureFieldHeader(key)] = value;
+      count += 1;
+    });
+    row.exifCandidate = null;
+    renderAll();
+    pulseSaved();
+    showToast(`${count}項目を空欄に反映しました`);
+  }
+
+  function readExif(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let start = 0;
+    if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+      let offset = 2;
+      while (offset + 4 <= bytes.length) {
+        if (bytes[offset] !== 0xff) break;
+        const marker = bytes[offset + 1];
+        if (marker === 0xda || marker === 0xd9) break;
+        const length = (bytes[offset + 2] << 8) | bytes[offset + 3];
+        if (length < 2 || offset + 2 + length > bytes.length) break;
+        if (marker === 0xe1 && String.fromCharCode(...bytes.slice(offset + 4, offset + 10)) === "Exif\0\0") {
+          start = offset + 10;
+          break;
+        }
+        offset += 2 + length;
+      }
+      if (!start) throw new Error("この画像にExif情報が見つかりません");
+    } else if (!((bytes[0] === 0x49 && bytes[1] === 0x49) || (bytes[0] === 0x4d && bytes[1] === 0x4d))) {
+      throw new Error("JPEGまたはTIFF画像を選んでください（HEIC等は未対応）");
+    }
+    const view = new DataView(buffer);
+    const little = bytes[start] === 0x49 && bytes[start + 1] === 0x49;
+    if (!little && !(bytes[start] === 0x4d && bytes[start + 1] === 0x4d)) throw new Error("Exifの形式を読み取れません");
+    const u16 = (at) => view.getUint16(start + at, little);
+    const u32 = (at) => view.getUint32(start + at, little);
+    if (u16(2) !== 42) throw new Error("Exifの形式を読み取れません");
+    const size = bytes.length - start;
+    const readIfd = (at) => {
+      const tags = new Map();
+      if (!Number.isInteger(at) || at < 8 || at + 2 > size) return tags;
+      const count = u16(at);
+      if (at + 2 + count * 12 > size) return tags;
+      for (let i = 0; i < count; i += 1) {
+        const entry = at + 2 + i * 12;
+        const tag = u16(entry), type = u16(entry + 2), amount = u32(entry + 4);
+        const unit = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8 }[type];
+        if (!unit || !amount || amount > 4096 || unit * amount > size) continue;
+        const data = unit * amount <= 4 ? entry + 8 : u32(entry + 8);
+        if (data < 0 || data + unit * amount > size) continue;
+        let value;
+        if (type === 2) value = new TextDecoder().decode(bytes.subarray(start + data, start + data + amount)).replace(/\0+$/, "").trim();
+        else if (type === 3) value = u16(data);
+        else if (type === 4) value = u32(data);
+        else if (type === 5 || type === 10) {
+          const numerator = type === 5 ? u32(data) : view.getInt32(start + data, little);
+          const denominator = type === 5 ? u32(data + 4) : view.getInt32(start + data + 4, little);
+          value = denominator ? { numerator, denominator } : null;
+        }
+        if (value !== undefined && value !== null) tags.set(tag, value);
+      }
+      return tags;
+    };
+    try {
+      const primary = readIfd(u32(4));
+      const photo = readIfd(primary.get(0x8769));
+      const camera = [primary.get(0x010f), primary.get(0x0110)].filter(Boolean).join(" ").trim();
+      const exposure = photo.get(0x829a);
+      const shutter = exposure && typeof exposure === "object" && exposure.numerator > 0 ? (
+        exposure.numerator < exposure.denominator
+          ? `1/${Number((exposure.denominator / exposure.numerator).toFixed(2))}`
+          : String(Number((exposure.numerator / exposure.denominator).toFixed(4)))
+      ) : "";
+      const aperture = photo.get(0x829d);
+      const values = {
+        shutter,
+        aperture: aperture && typeof aperture === "object" ? String(Number((aperture.numerator / aperture.denominator).toFixed(2))) : "",
+        iso: String(photo.get(0x8827) || photo.get(0x8833) || ""),
+        camera,
+        lens: String(photo.get(0xa434) || "")
+      };
+      if (!Object.values(values).some(Boolean)) throw new Error("対応するExif項目が見つかりません");
+      return values;
+    } catch (error) {
+      if (error instanceof RangeError) throw new Error("Exifデータが破損しています");
+      throw error;
+    }
   }
 
   function renderPageOptions() {

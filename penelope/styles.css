@@ -164,6 +164,15 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .field span { display: flex; justify-content: space-between; margin-bottom: 6px; color: #5b615c; font-size: 11px; font-weight: 600; }
 .field span b { color: var(--danger); font-size: 9px; }
 .field input, .field textarea { width: 100%; border: 1px solid #d4d8d2; border-radius: 0; background: white; color: var(--ink); outline: 0; padding: 9px 10px; font-size: 13px; }
+.field select { width: 100%; height: 38px; border: 1px solid #d4d8d2; background: white; color: var(--ink); padding: 0 10px; font-size: 13px; }
+.exif-panel { margin: 0 0 16px; padding: 12px; border: 1px solid #d4d8d2; background: #fff; font-size: 11px; line-height: 1.6; }
+.exif-panel[hidden] { display: none; }
+.exif-panel p { margin: 0 0 9px; }
+.exif-links { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 10px; }
+.exif-links a { color: #9c286c; overflow-wrap: anywhere; }
+.exif-picker { display: inline-flex; cursor: pointer; margin-bottom: 8px; }
+.exif-result { overflow-wrap: anywhere; }
+.exif-panel button:disabled { opacity: .45; cursor: not-allowed; }
 .field input { height: 38px; }
 .field textarea { resize: vertical; min-height: 105px; line-height: 1.65; }
 .field input:focus, .field textarea:focus { border-color: #5d655f; box-shadow: 0 0 0 2px rgba(255,153,212,.42); }
