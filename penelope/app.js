@@ -107,6 +107,7 @@
   const previewResizeObserver = typeof ResizeObserver === "function" ? new ResizeObserver(updatePreviewScale) : null;
   previewResizeObserver?.observe(els.previewScroll);
   window.addEventListener("resize", updatePreviewScale);
+  window.addEventListener("beforeprint", detectLayoutWarnings);
 
   document.querySelectorAll('input[type="file"][accept*="csv"]').forEach((input) => {
     input.addEventListener("change", (event) => {
@@ -154,14 +155,20 @@
     updatePreviewScale();
   });
 
-  els.printButton.addEventListener("click", () => {
+  els.printButton.addEventListener("click", async () => {
     const previousPage = state.page;
     state.page = "all";
     renderPages();
+    await document.fonts.ready;
     requestAnimationFrame(() => {
-      window.print();
-      state.page = previousPage;
-      setTimeout(renderPages, 100);
+      detectLayoutWarnings();
+      requestAnimationFrame(() => {
+        window.addEventListener("afterprint", () => {
+          state.page = previousPage;
+          renderPages();
+        }, { once: true });
+        window.print();
+      });
     });
   });
 
@@ -1008,7 +1015,7 @@
     const warnings = [];
     if (!row.title) warnings.push("作品タイトルが未入力です");
     if (!row.author) warnings.push("表記名が未入力です");
-    if (row.captionOverflow) warnings.push("キャプションが…で見切れています");
+    if (row.captionOverflow) warnings.push("文字が枠内に収まらず見切れています");
     if (row.exifStatus?.state === "error") warnings.push("画像をダウンロードできませんでした。フォルダの権限を「リンクを知っている全員」にしてください");
     return warnings;
   }
@@ -1019,13 +1026,32 @@
     els.pages.querySelectorAll(".caption-card[data-row-index]").forEach((card) => {
       const row = state.rows[Number(card.dataset.rowIndex)];
       if (!row) return;
+      card.querySelector(".card-alerts")?.remove();
       const caption = card.querySelector(".card-caption");
-      while (caption && caption.scrollHeight > caption.clientHeight + 1 && row.typography.caption > 50) {
-        row.typography.caption = Math.max(50, row.typography.caption - 5);
+      const primary = card.querySelector(".card-primary");
+      const tech = card.querySelector(".card-tech");
+      for (let attempt = 0; attempt < 31; attempt += 1) {
+        const captionClipped = Boolean(caption && caption.scrollHeight > caption.clientHeight + 1);
+        const primaryOverflow = contentOverflows(primary);
+        const techOverflow = contentOverflows(tech);
+        if (!captionClipped && !primaryOverflow && !techOverflow) break;
+        const keys = new Set();
+        if (captionClipped) keys.add("caption");
+        if (primaryOverflow) ["title", "person", "caption"].forEach((key) => keys.add(key));
+        if (techOverflow) TECH_FIELDS.forEach((key) => keys.add(key));
+        let shrunk = false;
+        keys.forEach((key) => {
+          if (row.typography[key] > 50) {
+            row.typography[key] = Math.max(50, row.typography[key] - 5);
+            shrunk = true;
+          }
+        });
+        if (!shrunk) break;
         applyTypography(card, row.typography);
         resized = true;
       }
-      const overflow = Boolean(caption && caption.scrollHeight > caption.clientHeight + 1);
+      const overflow = Boolean((caption && caption.scrollHeight > caption.clientHeight + 1)
+        || contentOverflows(primary) || contentOverflows(tech));
       if (row.captionOverflow !== overflow) changed = true;
       row.captionOverflow = overflow;
       const visualWarnings = rowWarnings(row).filter((warning) => warning.includes("見切れ"));
@@ -1045,6 +1071,19 @@
       renderList();
     }
     if (resized) syncTypographyControls();
+  }
+
+  function contentOverflows(container) {
+    if (!container?.children.length) return false;
+    const bounds = container.getBoundingClientRect();
+    const style = getComputedStyle(container);
+    const zoom = bounds.height / container.offsetHeight;
+    const top = bounds.top + parseFloat(style.paddingTop) * zoom;
+    const bottom = bounds.bottom - parseFloat(style.paddingBottom) * zoom;
+    return Array.from(container.children).some((child) => {
+      const box = child.getBoundingClientRect();
+      return box.top < top - 1 || box.bottom > bottom + 1;
+    });
   }
 
   function updatePreviewScale() {
