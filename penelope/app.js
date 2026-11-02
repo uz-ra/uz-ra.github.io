@@ -1015,10 +1015,16 @@
 
   function detectLayoutWarnings() {
     let changed = false;
+    let resized = false;
     els.pages.querySelectorAll(".caption-card[data-row-index]").forEach((card) => {
       const row = state.rows[Number(card.dataset.rowIndex)];
       if (!row) return;
       const caption = card.querySelector(".card-caption");
+      while (caption && caption.scrollHeight > caption.clientHeight + 1 && row.typography.caption > 50) {
+        row.typography.caption = Math.max(50, row.typography.caption - 5);
+        applyTypography(card, row.typography);
+        resized = true;
+      }
       const overflow = Boolean(caption && caption.scrollHeight > caption.clientHeight + 1);
       if (row.captionOverflow !== overflow) changed = true;
       row.captionOverflow = overflow;
@@ -1038,6 +1044,7 @@
       renderStats();
       renderList();
     }
+    if (resized) syncTypographyControls();
   }
 
   function updatePreviewScale() {
