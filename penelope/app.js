@@ -1302,7 +1302,7 @@
     const definitions = {
       title: 7,
       person: 3.57,
-      caption: 3.185,
+      caption: 6.37,
       location: 3.825,
       camera: 3.825,
       lens: 3.4425,
