@@ -1073,22 +1073,24 @@
     title.textContent = row.title;
     const person = document.createElement("div");
     person.className = "card-person";
+    const personText = document.createElement("div");
+    personText.className = "person-text";
     const affiliation = document.createElement("div");
+    affiliation.className = "affiliation";
     affiliation.textContent = [row.university, row.grade].filter(Boolean).join(" ");
-    const authorRow = document.createElement("div");
-    authorRow.className = "author-row";
     const author = document.createElement("span");
     author.className = "author-name";
     author.textContent = row.author;
-    authorRow.append(author);
+    if (affiliation.textContent) personText.append(affiliation);
+    personText.append(author);
+    person.append(personText);
     if (row.sns) {
       const qr = document.createElement("div");
       qr.className = "qr-slot";
       qr.dataset.qr = row.sns;
       qr.title = state.stripQuery ? stripUrlQuery(row.sns) : row.sns;
-      authorRow.append(qr);
+      person.append(qr);
     }
-    person.append(affiliation, authorRow);
     if (row.title) primary.append(title);
     primary.append(person);
     if (row.caption) {

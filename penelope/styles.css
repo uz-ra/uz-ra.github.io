@@ -115,9 +115,9 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .card-primary, .card-tech { min-width: 0; padding: 4.3mm; display: flex; flex-direction: column; justify-content: center; }
 .card-primary { border-right: 1px solid #ededeb; }
 .card-title { margin: 0 0 20px; font: 600 var(--title-font)/1.35 var(--serif); overflow-wrap: anywhere; }
-.card-person { font-size: var(--person-font); line-height: 1.55; }
+.card-person { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; font-size: var(--person-font); line-height: 1.55; }
+.person-text { min-width: 0; flex: 1; }
 .author-name { font-weight: 400; }
-.author-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 .qr-slot { width: 13mm; aspect-ratio: 1; flex: 0 0 auto; }
 .qr-slot canvas, .qr-slot img { display: block; width: 100% !important; height: 100% !important; }
 .card-caption { margin: 14px 0 0; padding-top: 13px; border-top: 1px solid #373a38; font: 500 var(--caption-font)/1.65 var(--serif); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
