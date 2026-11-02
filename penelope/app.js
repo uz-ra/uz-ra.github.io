@@ -49,6 +49,7 @@
   const TYPOGRAPHY_BASE_VERSION = "2";
   const TYPOGRAPHY_BASE_HEADER = "文字サイズ基準バージョン";
   const COLUMN_MAPPING_HEADER = "Penelope列割り当て";
+  const SPLIT_CAPTION_HEADER = "キャプションをわける";
   const TYPOGRAPHY_HEADERS = {
     title: "文字サイズ：作品タイトル（%）",
     person: "文字サイズ：所属・作者（%）",
@@ -83,13 +84,16 @@
     "pageCount", "issueCount", "searchInput", "pages", "pageSelect", "previewTitle",
     "editorForm", "selectedIndex", "moveUpButton", "moveDownButton", "deleteButton",
     "downloadCsvButton", "printButton", "fitButton", "previewScroll", "toast",
-    "typographyButton", "typographyPanel", "typographyHeading", "resetTypographyButton", "stripQueryToggle",
+    "typographyPanel", "typographyHeading", "resetTypographyButton", "splitCaptionToggle", "stripQueryToggle",
     "normalizeApertureToggle", "apertureOptions", "aperturePrefixInput", "apertureItalicToggle",
     "typographyScopeSelect", "typographyScopeHint",
     "columnMappingDialog", "columnMappingForm", "columnMappingFields", "mappingFilename",
     "cancelMappingButton", "remapButton", "exifPanel", "imageLinks", "exifFileInput",
     "exifResult", "applyExifButton", "exifStatus", "localExifToggle", "retryExifButton", "transferButton"
   ].map((id) => [id, document.getElementById(id)]));
+
+  els.editorForm.append(els.typographyPanel);
+  els.typographyPanel.hidden = false;
 
   loadPreferences();
   applyTypography();
@@ -163,6 +167,13 @@
     requestAnimationFrame(() => {
       detectLayoutWarnings();
       requestAnimationFrame(() => {
+        const overflowing = state.rows.filter((row) => row.captionOverflow);
+        if (overflowing.length) {
+          state.page = previousPage;
+          renderPages();
+          window.alert(`枠に収まらない作品が${overflowing.length}件あります。文字を短くするかサイズを調整してください。キャプションが長い場合は「キャプションをわける」も使えます。\n\n${overflowing.slice(0, 8).map((row) => `・${row.title || "タイトル未入力"}`).join("\n")}`);
+          return;
+        }
         window.addEventListener("afterprint", () => {
           state.page = previousPage;
           renderPages();
@@ -182,11 +193,6 @@
     els.columnMappingDialog.close();
   });
   els.columnMappingDialog.addEventListener("cancel", () => { state.pendingImport = null; });
-  els.typographyButton.addEventListener("click", () => {
-    const willOpen = els.typographyPanel.hidden;
-    els.typographyPanel.hidden = !willOpen;
-    els.typographyButton.setAttribute("aria-expanded", String(willOpen));
-  });
   els.typographyScopeSelect.addEventListener("change", () => {
     syncTypographyControls();
     showToast(els.typographyScopeSelect.value === "all" ? "文字サイズを全作品へ一括反映します" : "選択中の作品だけ変更します");
@@ -231,14 +237,20 @@
     savePreferences();
     renderPages();
   });
-  document.addEventListener("click", (event) => {
-    if (els.typographyPanel.hidden || els.typographyPanel.contains(event.target) || els.typographyButton.contains(event.target)) return;
-    closeTypographyPanel();
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeTypographyPanel();
-  });
   syncTypographyControls();
+
+  els.splitCaptionToggle.addEventListener("change", () => {
+    const row = state.rows[state.selected];
+    if (!row) return;
+    row.splitCaption = els.splitCaptionToggle.checked;
+    row.raw[SPLIT_CAPTION_HEADER] = row.splitCaption ? "はい" : "";
+    if (!state.headers.includes(SPLIT_CAPTION_HEADER)) state.headers.push(SPLIT_CAPTION_HEADER);
+    if (state.page !== "all") state.page = String(buildPageLayout().findIndex((page) => page.some((entry) => entry?.rowIndex === state.selected)));
+    renderStats();
+    renderPageOptions();
+    renderPages();
+    pulseSaved();
+  });
 
   els.editorForm.addEventListener("input", (event) => {
     if (state.selected < 0) return;
@@ -367,6 +379,7 @@
         const typography = { ...row.typography };
         const remapped = normalizeRow(row.raw, mapping);
         remapped.typography = typography;
+        remapped.splitCaption = row.splitCaption;
         return remapped;
       });
       state.selected = Math.min(Math.max(state.selected, 0), state.rows.length - 1);
@@ -413,6 +426,7 @@
       university: shortBilingual(read("university")),
       grade: shortBilingual(read("grade")),
       caption: /^(キャプション無し|キャプションなし|-|なし|無し)$/i.test(captionValue) ? "" : captionValue,
+      splitCaption: /^(はい|yes|true|1)$/i.test(clean(raw[SPLIT_CAPTION_HEADER])),
       sns: clean(read("sns")),
       location: clean(read("location")),
       camera: clean(read("camera")),
@@ -602,6 +616,7 @@
       rows: state.rows.map((row) => ({
         raw: { ...row.raw }, fieldHeaders: { ...row.fieldHeaders },
         typography: { ...row.typography },
+        splitCaption: row.splitCaption,
         values: Object.fromEntries([...Object.keys(FIELDS), "apertureSource"]
           .map((key) => [key, row[key] ?? ""]))
       })),
@@ -642,6 +657,7 @@
       const mapping = Object.fromEntries(Object.keys(FIELDS).map((key) => [key,
         state.headers.includes(source?.fieldHeaders?.[key]) ? source.fieldHeaders[key] : ""]));
       const row = normalizeRow(raw, mapping);
+      row.splitCaption = source?.splitCaption === true || row.splitCaption;
       [...Object.keys(FIELDS), "apertureSource"].forEach((key) => {
         if (typeof source?.values?.[key] === "string") row[key] = source.values[key];
       });
@@ -678,7 +694,7 @@
   function renderStats() {
     const issues = state.rows.filter((row) => rowWarnings(row).length).length;
     els.workCount.textContent = state.rows.length;
-    els.pageCount.textContent = Math.ceil(state.rows.length / 6);
+    els.pageCount.textContent = buildPageLayout().length;
     els.issueCount.textContent = issues;
   }
 
@@ -729,6 +745,7 @@
     [...els.editorForm.elements].forEach((input) => {
       if (input.name) input.value = row[input.name] ?? "";
     });
+    els.splitCaptionToggle.checked = row.splitCaption;
     els.moveUpButton.disabled = state.selected === 0;
     els.moveDownButton.disabled = state.selected === state.rows.length - 1;
     renderExifPanel();
@@ -970,8 +987,28 @@
     }
   }
 
+  function buildPageLayout() {
+    if (!state.rows.length) return [];
+    const pages = [Array(6).fill(null)];
+    let pageIndex = 0;
+    state.rows.forEach((row, rowIndex) => {
+      while (true) {
+        const page = pages[pageIndex];
+        const slot = page.findIndex((entry, index) => !entry && (!row.splitCaption || (index < 4 && !page[index + 2])));
+        if (slot >= 0) {
+          page[slot] = { rowIndex, part: row.splitCaption ? "info" : "normal" };
+          if (row.splitCaption) page[slot + 2] = { rowIndex, part: "caption" };
+          break;
+        }
+        pageIndex += 1;
+        pages.push(Array(6).fill(null));
+      }
+    });
+    return pages;
+  }
+
   function renderPageOptions() {
-    const count = Math.ceil(state.rows.length / 6);
+    const count = buildPageLayout().length;
     els.pageSelect.replaceChildren();
     const all = new Option(`全${count}ページ`, "all");
     els.pageSelect.add(all);
@@ -984,18 +1021,19 @@
 
   function renderPages() {
     els.pages.replaceChildren();
-    const chunks = [];
-    for (let index = 0; index < state.rows.length; index += 6) chunks.push(state.rows.slice(index, index + 6));
-    const visible = state.page === "all" ? chunks.map((chunk, index) => [chunk, index]) : [[chunks[Number(state.page)], Number(state.page)]];
-    els.previewTitle.textContent = state.page === "all" ? `全${chunks.length}ページ` : `${Number(state.page) + 1}ページ目`;
-    visible.forEach(([rows, pageIndex]) => {
-      if (!rows) return;
+    const layout = buildPageLayout();
+    const visible = state.page === "all" ? layout.map((slots, index) => [slots, index]) : [[layout[Number(state.page)], Number(state.page)]];
+    els.previewTitle.textContent = state.page === "all" ? `全${layout.length}ページ` : `${Number(state.page) + 1}ページ目`;
+    visible.forEach(([slots, pageIndex]) => {
+      if (!slots) return;
       const page = document.createElement("section");
       page.className = "print-page";
       page.setAttribute("aria-label", `${pageIndex + 1}ページ目`);
       for (let slot = 0; slot < 6; slot += 1) {
-        const row = rows[slot];
-        if (row) page.append(createCard(row, pageIndex * 6 + slot));
+        const entry = slots[slot];
+        if (entry) page.append(entry.part === "caption"
+          ? createSplitCaptionCard(state.rows[entry.rowIndex], entry.rowIndex)
+          : createCard(state.rows[entry.rowIndex], entry.rowIndex, entry.part));
         else {
           const blank = document.createElement("div");
           blank.className = "caption-card blank-card";
@@ -1022,14 +1060,16 @@
 
   function detectLayoutWarnings() {
     let changed = false;
-    let resized = false;
+    const overflows = new Map();
     els.pages.querySelectorAll(".caption-card[data-row-index]").forEach((card) => {
       const row = state.rows[Number(card.dataset.rowIndex)];
       if (!row) return;
       card.querySelector(".card-alerts")?.remove();
       const caption = card.querySelector(".card-caption");
-      const primary = card.querySelector(".card-primary");
+      const primary = card.classList.contains("split-caption") ? card : card.querySelector(".card-primary");
       const tech = card.querySelector(".card-tech");
+      const fittedTypography = { ...row.typography };
+      applyTypography(card, fittedTypography);
       for (let attempt = 0; attempt < 31; attempt += 1) {
         const captionClipped = Boolean(caption && caption.scrollHeight > caption.clientHeight + 1);
         const primaryOverflow = contentOverflows(primary);
@@ -1037,40 +1077,40 @@
         if (!captionClipped && !primaryOverflow && !techOverflow) break;
         const keys = new Set();
         if (captionClipped) keys.add("caption");
-        if (primaryOverflow) ["title", "person", "caption"].forEach((key) => keys.add(key));
+        if (primaryOverflow) (card.classList.contains("split-caption") ? ["caption"]
+          : card.classList.contains("split-info") ? ["title", "person"] : ["title", "person", "caption"]).forEach((key) => keys.add(key));
         if (techOverflow) TECH_FIELDS.forEach((key) => keys.add(key));
         let shrunk = false;
         keys.forEach((key) => {
-          if (row.typography[key] > 50) {
-            row.typography[key] = Math.max(50, row.typography[key] - 5);
+          const minimum = key === "caption" ? 80 : 50;
+          if (fittedTypography[key] > minimum) {
+            fittedTypography[key] = Math.max(minimum, fittedTypography[key] - 5);
             shrunk = true;
           }
         });
         if (!shrunk) break;
-        applyTypography(card, row.typography);
-        resized = true;
+        applyTypography(card, fittedTypography);
       }
       const overflow = Boolean((caption && caption.scrollHeight > caption.clientHeight + 1)
         || contentOverflows(primary) || contentOverflows(tech));
-      if (row.captionOverflow !== overflow) changed = true;
-      row.captionOverflow = overflow;
-      const visualWarnings = rowWarnings(row).filter((warning) => warning.includes("見切れ"));
-      if (visualWarnings.length) {
+      overflows.set(row, Boolean(overflows.get(row) || overflow));
+      if (overflow) {
         const alerts = document.createElement("div");
         alerts.className = "card-alerts";
-        visualWarnings.forEach((warning) => {
-          const alert = document.createElement("span");
-          alert.textContent = `⚠ ${warning}`;
-          alerts.append(alert);
-        });
+        const alert = document.createElement("span");
+        alert.textContent = "⚠ 文字が枠内に収まりません";
+        alerts.append(alert);
         card.append(alerts);
       }
+    });
+    overflows.forEach((overflow, row) => {
+      if (row.captionOverflow !== overflow) changed = true;
+      row.captionOverflow = overflow;
     });
     if (changed) {
       renderStats();
       renderList();
     }
-    if (resized) syncTypographyControls();
   }
 
   function contentOverflows(container) {
@@ -1099,9 +1139,9 @@
     els.pages.style.setProperty("--preview-zoom", String(scale));
   }
 
-  function createCard(row, index) {
+  function createCard(row, index, part = "normal") {
     const card = document.createElement("article");
-    card.className = `caption-card${index === state.selected ? " selected" : ""}`;
+    card.className = `caption-card${part === "info" ? " split-info" : ""}${index === state.selected ? " selected" : ""}`;
     applyTypography(card, row.typography);
     card.tabIndex = 0;
     card.dataset.rowIndex = String(index);
@@ -1139,7 +1179,7 @@
     }
     if (row.title) primary.append(title);
     primary.append(person);
-    if (row.caption) {
+    if (row.caption && part === "normal") {
       const caption = document.createElement("p");
       caption.className = "card-caption";
       caption.textContent = row.caption;
@@ -1171,6 +1211,24 @@
     });
     if (settings.children.length) tech.append(settings);
     card.append(primary, tech);
+    return card;
+  }
+
+  function createSplitCaptionCard(row, index) {
+    const card = document.createElement("article");
+    card.className = `caption-card split-caption${index === state.selected ? " selected" : ""}`;
+    card.dataset.rowIndex = String(index);
+    card.tabIndex = 0;
+    card.setAttribute("aria-label", `${index + 1}. ${row.title || "タイトル未入力"}のキャプション`);
+    applyTypography(card, row.typography);
+    card.addEventListener("click", () => selectRow(index));
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectRow(index); }
+    });
+    const caption = document.createElement("p");
+    caption.className = "split-caption-text";
+    caption.textContent = row.caption;
+    card.append(caption);
     return card;
   }
 
@@ -1211,11 +1269,6 @@
       const queryIndex = value.indexOf("?");
       return queryIndex >= 0 ? value.slice(0, queryIndex) : value;
     }
-  }
-
-  function closeTypographyPanel() {
-    els.typographyPanel.hidden = true;
-    els.typographyButton.setAttribute("aria-expanded", "false");
   }
 
   function typographyTargets() {
@@ -1305,13 +1358,13 @@
 
   function selectRow(index) {
     state.selected = index;
-    const pageIndex = Math.floor(index / 6);
+    const pageIndex = buildPageLayout().findIndex((page) => page.some((entry) => entry?.rowIndex === index));
     if (state.page !== "all" && Number(state.page) !== pageIndex) state.page = String(pageIndex);
     renderList();
     renderEditor();
     syncTypographyControls();
     renderPages();
-    document.querySelector(`.caption-card[aria-label^="${index + 1}."]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    document.querySelector(`.caption-card[data-row-index="${index}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 
   function moveSelected(delta) {
@@ -1354,6 +1407,7 @@
     });
     if (!findMatchingHeader(state.headers, [TYPOGRAPHY_BASE_HEADER])) state.headers.push(TYPOGRAPHY_BASE_HEADER);
     if (!findMatchingHeader(state.headers, [COLUMN_MAPPING_HEADER])) state.headers.push(COLUMN_MAPPING_HEADER);
+    if (!findMatchingHeader(state.headers, [SPLIT_CAPTION_HEADER])) state.headers.push(SPLIT_CAPTION_HEADER);
     state.rows.forEach((row) => {
       Object.entries(FIELDS).forEach(([key, header]) => {
         const targetHeader = row.fieldHeaders[key];
@@ -1365,6 +1419,7 @@
       });
       row.raw[findMatchingHeader(state.headers, [TYPOGRAPHY_BASE_HEADER]) || TYPOGRAPHY_BASE_HEADER] = TYPOGRAPHY_BASE_VERSION;
       row.raw[findMatchingHeader(state.headers, [COLUMN_MAPPING_HEADER]) || COLUMN_MAPPING_HEADER] = JSON.stringify(row.fieldHeaders);
+      row.raw[findMatchingHeader(state.headers, [SPLIT_CAPTION_HEADER]) || SPLIT_CAPTION_HEADER] = row.splitCaption ? "はい" : "";
     });
     const lines = [state.headers, ...state.rows.map((row) => state.headers.map((header) => row.raw[header] ?? ""))];
     const csv = `\uFEFF${lines.map((cells) => cells.map(csvCell).join(",")).join("\r\n")}`;
@@ -1429,7 +1484,7 @@
         description: "現在読み込まれている作品数、ページ数、要確認件数を返します。",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
         annotations: { readOnlyHint: true, untrustedContentHint: false },
-        execute: () => ({ works: state.rows.length, pages: Math.ceil(state.rows.length / 6), issues: state.rows.filter((row) => !row.title || !row.author).length })
+        execute: () => ({ works: state.rows.length, pages: buildPageLayout().length, issues: state.rows.filter((row) => !row.title || !row.author).length })
       },
       {
         name: "select_caption_work",

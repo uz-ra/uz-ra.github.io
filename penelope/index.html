@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=Shippori+Mincho:wght@500;600&amp;display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23151817'/%3E%3Cpath d='M17 17h30v30H17z' fill='none' stroke='%23ff99d4' stroke-width='4'/%3E%3Cpath d='M23 39l8-14 10 14' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=20261102-5" />
+    <link rel="stylesheet" href="./styles.css?v=20261102-6" />
   </head>
   <body>
     <header class="app-header">
@@ -67,7 +67,7 @@
           </div>
           <p class="eyebrow">READY FOR YOUR EXHIBITION</p>
           <h2>CSVから、印刷できる<br />キャプションへ。</h2>
-          <p class="empty-copy">Googleフォームから書き出したCSVを選ぶと、6作品ずつA4横に自動配置します。</p>
+          <p class="empty-copy">Googleフォームから書き出したCSVを選ぶと、A4横の6枠に自動配置します。</p>
           <div class="empty-actions">
             <label class="button primary file-button">
               <input id="fileInput" type="file" accept=".csv,text/csv" hidden />
@@ -88,7 +88,6 @@
               <label class="select-wrap">表示
                 <select id="pageSelect" aria-label="プレビューするページ"></select>
               </label>
-              <button class="button settings-button" type="button" id="typographyButton" aria-expanded="false" aria-controls="typographyPanel">文字設定</button>
               <button class="button ghost compact" type="button" id="fitButton">全体表示</button>
             </div>
             <div class="typography-panel" id="typographyPanel" hidden>
@@ -145,6 +144,7 @@
           </div>
           <label class="field wide"><span>所属大学</span><input name="university" /></label>
           <label class="field wide"><span>キャプション</span><textarea name="caption" rows="5"></textarea></label>
+          <label class="split-option"><input type="checkbox" id="splitCaptionToggle" /><span><b>キャプションをわける</b><small>この作品は情報面と、本文だけの面を縦に2枠使って印刷します</small></span></label>
           <label class="field wide"><span>撮影場所</span><input name="location" /></label>
           <div class="field-row">
             <label class="field"><span>カメラ</span><input name="camera" /></label>
@@ -197,6 +197,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./qrcode.min.js"></script>
-    <script src="./app.js?v=20261102-5"></script>
+    <script src="./app.js?v=20261102-6"></script>
   </body>
 </html>

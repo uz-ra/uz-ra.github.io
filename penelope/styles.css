@@ -120,7 +120,9 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .author-name { font-weight: 400; }
 .qr-slot { width: 13mm; aspect-ratio: 1; flex: 0 0 auto; }
 .qr-slot canvas, .qr-slot img { display: block; width: 100% !important; height: 100% !important; }
-.card-caption { margin: 14px 0 0; flex-shrink: 0; padding-top: 13px; border-top: 1px solid #373a38; font: 500 var(--caption-font)/1.65 var(--serif); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.card-caption { margin: 14px 0 0; flex-shrink: 0; padding-top: 13px; border-top: 1px solid #373a38; font: 500 var(--caption-font)/1.65 var(--serif); white-space: pre-wrap; overflow-wrap: anywhere; }
+.split-caption { display: flex; align-items: center; padding: 4.3mm; overflow: hidden; }
+.split-caption-text { width: 100%; flex-shrink: 0; margin: 0; font: 500 var(--caption-font)/1.65 var(--serif); white-space: pre-wrap; overflow-wrap: anywhere; }
 .card-tech { align-items: center; text-align: center; gap: 11px; font-size: var(--tech-font); line-height: 1.45; }
 .card-tech > * { flex-shrink: 0; }
 .card-tech .location { margin-bottom: 6px; font-weight: 600; font-size: var(--location-font); }
@@ -167,8 +169,16 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .aperture-prefix.italic { font-style: italic; }
 
 .inspector { display: flex; flex-direction: column; border-left: 1px solid var(--line); }
+.inspector .typography-panel { position: static; width: auto; max-height: none; overflow: visible; margin-top: 20px; padding: 18px 0 0; border: 0; border-top: 1px solid var(--line); box-shadow: none; background: transparent; }
+.inspector .panel-heading { display: block; }
+.inspector .panel-heading .text-button { margin-top: 5px; }
 .move-actions { display: flex; gap: 5px; }
 #editorForm { flex: 1; min-height: 0; overflow-y: auto; padding: 0 22px 26px; }
+.split-option { display: flex; align-items: flex-start; gap: 9px; margin: -3px 0 17px; padding: 11px; border: 1px solid var(--line); background: white; cursor: pointer; }
+.split-option input { margin: 2px 0 0; accent-color: var(--accent); }
+.split-option b, .split-option small { display: block; }
+.split-option b { font-size: 12px; }
+.split-option small { margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .field-row.three { grid-template-columns: repeat(3, 1fr); }
 .field { display: block; margin-bottom: 14px; min-width: 0; }
