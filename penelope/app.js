@@ -1078,7 +1078,7 @@
         const keys = new Set();
         if (captionClipped) keys.add("caption");
         if (primaryOverflow) (card.classList.contains("split-caption") ? ["caption"]
-          : card.classList.contains("split-info") ? ["title", "person"] : ["title", "person", "caption"]).forEach((key) => keys.add(key));
+          : card.classList.contains("split-info") || !caption ? ["title", "person"] : ["caption"]).forEach((key) => keys.add(key));
         if (techOverflow) TECH_FIELDS.forEach((key) => keys.add(key));
         let shrunk = false;
         keys.forEach((key) => {
