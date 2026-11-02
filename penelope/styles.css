@@ -11,6 +11,12 @@
   --person-font: 3.57mm;
   --caption-font: 3.185mm;
   --tech-font: 3.825mm;
+  --location-font: 3.825mm;
+  --camera-font: 3.825mm;
+  --lens-font: 3.4425mm;
+  --aperture-font: 3.825mm;
+  --shutter-font: 3.825mm;
+  --iso-font: 3.825mm;
   --danger: #b33b2f;
   --sans: "Noto Sans JP", system-ui, sans-serif;
   --serif: "Shippori Mincho", "Hiragino Mincho ProN", serif;
@@ -111,14 +117,18 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .card-title { margin: 0 0 20px; font: 600 var(--title-font)/1.35 var(--serif); overflow-wrap: anywhere; }
 .card-person { font-size: var(--person-font); line-height: 1.55; }
 .author-name { font-weight: 400; }
-.author-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.author-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 .qr-slot { width: 13mm; aspect-ratio: 1; flex: 0 0 auto; }
 .qr-slot canvas, .qr-slot img { display: block; width: 100% !important; height: 100% !important; }
 .card-caption { margin: 14px 0 0; padding-top: 13px; border-top: 1px solid #373a38; font: 500 var(--caption-font)/1.65 var(--serif); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .card-tech { align-items: center; text-align: center; gap: 11px; font-size: var(--tech-font); line-height: 1.45; }
-.card-tech .location { margin-bottom: 6px; font-weight: 600; }
-.card-tech .lens { color: var(--ink); font-size: .9em; }
+.card-tech .location { margin-bottom: 6px; font-weight: 600; font-size: var(--location-font); }
+.card-tech .camera { font-size: var(--camera-font); }
+.card-tech .lens { color: var(--ink); font-size: var(--lens-font); }
 .settings { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 9px; }
+.settings .aperture { font-size: var(--aperture-font); }
+.settings .shutter { font-size: var(--shutter-font); }
+.settings .iso { font-size: var(--iso-font); }
 .settings span + span::before { content: "|"; margin-right: 9px; color: #b0b3af; }
 .card-alerts { position: absolute; right: 5px; bottom: 4px; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; pointer-events: none; }
 .card-alerts span { padding: 2px 5px; background: #fff2b8; color: #6f5100; border: 1px solid #ddb83c; font: 600 8px/1.3 var(--sans); box-shadow: 0 1px 3px rgba(0,0,0,.08); }

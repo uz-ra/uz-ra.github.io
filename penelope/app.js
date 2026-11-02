@@ -21,7 +21,7 @@
   const FIELD_HEADER_ALIASES = {
     author: ["表示する名前 / Written name", "表示する名前", "表記する名前"],
     university: ["大学 / University"],
-    grade: ["学年 / 卒業年度"],
+    grade: ["学年 / 卒業年度", "学年 / 卒業年"],
     sns: ["SNSリンク(QR)"]
   };
   const FIELD_LABELS = {
@@ -41,8 +41,11 @@
     exifConsent: "画像のExifから情報を取得する",
     imageLink: "作品画像のリンク"
   };
-  const DEFAULT_TYPOGRAPHY = { title: 100, person: 100, caption: 100, tech: 100 };
+  const TECH_FIELDS = ["location", "camera", "lens", "aperture", "shutter", "iso"];
+  const DEFAULT_TYPOGRAPHY = { title: 100, person: 100, caption: 100,
+    location: 100, camera: 100, lens: 100, aperture: 100, shutter: 100, iso: 100 };
   const LEGACY_TYPOGRAPHY_BASE = { title: 140, person: 140, caption: 130, tech: 150 };
+  const LEGACY_TECH_HEADER = "文字サイズ：撮影情報（%）";
   const TYPOGRAPHY_BASE_VERSION = "2";
   const TYPOGRAPHY_BASE_HEADER = "文字サイズ基準バージョン";
   const COLUMN_MAPPING_HEADER = "Penelope列割り当て";
@@ -50,7 +53,12 @@
     title: "文字サイズ：作品タイトル（%）",
     person: "文字サイズ：所属・作者（%）",
     caption: "文字サイズ：キャプション（%）",
-    tech: "文字サイズ：撮影情報（%）"
+    location: "文字サイズ：撮影場所（%）",
+    camera: "文字サイズ：使用機材（%）",
+    lens: "文字サイズ：使用レンズ（%）",
+    aperture: "文字サイズ：絞り（%）",
+    shutter: "文字サイズ：SS（%）",
+    iso: "文字サイズ：ISO（%）"
   };
 
   const state = {
@@ -233,7 +241,7 @@
     if (input.name === "aperture") {
       row.apertureSource = input.value;
       row.aperture = formatAperture(input.value);
-    } else row[input.name] = input.value;
+    } else row[input.name] = input.name === "iso" ? formatIso(input.value) : input.value;
     if (input.name === "exifConsent" || input.name === "imageLink") {
       row.exifCandidate = null;
       row.exifFetchToken = (row.exifFetchToken || 0) + 1;
@@ -245,7 +253,7 @@
       }, 500);
     }
     const targetHeader = ensureFieldHeader(input.name);
-    row.raw[targetHeader] = input.value;
+    row.raw[targetHeader] = input.name === "iso" ? row.iso : input.value;
     renderStats();
     renderList();
     renderPages();
@@ -265,6 +273,16 @@
     row.aperture = normalized;
     row.raw[ensureFieldHeader("aperture")] = normalized;
     renderList();
+    renderPages();
+    pulseSaved();
+  });
+
+  els.editorForm.addEventListener("focusout", (event) => {
+    if (state.selected < 0 || event.target.name !== "iso") return;
+    const row = state.rows[state.selected];
+    row.iso = formatIso(event.target.value);
+    event.target.value = row.iso;
+    row.raw[ensureFieldHeader("iso")] = row.iso;
     renderPages();
     pulseSaved();
   });
@@ -395,7 +413,7 @@
       shutter: clean(read("shutter")),
       apertureSource: clean(read("aperture")),
       aperture: formatAperture(read("aperture")),
-      iso: clean(read("iso")),
+      iso: formatIso(read("iso")),
       exifConsent: clean(read("exifConsent")),
       imageLink: clean(read("imageLink")),
       exifCandidate: null,
@@ -409,15 +427,17 @@
   function readTypography(raw) {
     const typography = { ...DEFAULT_TYPOGRAPHY };
     const rawHeaders = Object.keys(raw);
-    const hasSavedTypography = Object.values(TYPOGRAPHY_HEADERS)
+    const hasSavedTypography = [...Object.values(TYPOGRAPHY_HEADERS), LEGACY_TECH_HEADER]
       .some((expectedHeader) => findMatchingHeader(rawHeaders, [expectedHeader]));
     const versionHeader = findMatchingHeader(rawHeaders, [TYPOGRAPHY_BASE_HEADER]);
     const usesCurrentBase = !hasSavedTypography || clean(versionHeader ? raw[versionHeader] : "") === TYPOGRAPHY_BASE_VERSION;
+    const oldTechHeader = findMatchingHeader(rawHeaders, [LEGACY_TECH_HEADER]);
     Object.entries(TYPOGRAPHY_HEADERS).forEach(([key, expectedHeader]) => {
-      const matchingHeader = findMatchingHeader(rawHeaders, [expectedHeader]);
+      const matchingHeader = findMatchingHeader(rawHeaders, [expectedHeader]) || (TECH_FIELDS.includes(key) ? oldTechHeader : "");
       const value = Number(matchingHeader ? raw[matchingHeader] : NaN);
       if (!Number.isFinite(value)) return;
-      const normalizedValue = usesCurrentBase ? value : value / LEGACY_TYPOGRAPHY_BASE[key] * 100;
+      const legacyBase = LEGACY_TYPOGRAPHY_BASE[key] || LEGACY_TYPOGRAPHY_BASE.tech;
+      const normalizedValue = usesCurrentBase ? value : value / legacyBase * 100;
       if (normalizedValue >= 50 && normalizedValue <= 200) typography[key] = formatSize(normalizedValue);
     });
     return typography;
@@ -458,6 +478,12 @@
     if (!cleaned) return "";
     const number = cleaned.match(/\d+(?:\.\d+)?/);
     return number ? `${state.aperturePrefix}${number[0]}` : original;
+  }
+
+  function formatIso(value) {
+    const original = clean(value);
+    const normalized = original.normalize("NFKC");
+    return /^\d+$/.test(normalized) ? `ISO ${normalized}` : original;
   }
 
   function refreshApertures() {
@@ -612,8 +638,9 @@
       [...Object.keys(FIELDS), "apertureSource"].forEach((key) => {
         if (typeof source?.values?.[key] === "string") row[key] = source.values[key];
       });
+      row.iso = formatIso(row.iso);
       Object.keys(DEFAULT_TYPOGRAPHY).forEach((key) => {
-        const size = Number(source?.typography?.[key]);
+        const size = Number(source?.typography?.[key] ?? (TECH_FIELDS.includes(key) ? source?.typography?.tech : undefined));
         if (Number.isFinite(size) && size >= 50 && size <= 200) row.typography[key] = size;
       });
       row.aperture = formatAperture(row.apertureSource);
@@ -817,7 +844,7 @@
     EXIF_FIELDS.forEach((key) => {
       const value = clean(values[key]);
       if (!value || clean(row[key])) return;
-      row[key] = key === "aperture" ? formatAperture(value) : value;
+      row[key] = key === "aperture" ? formatAperture(value) : key === "iso" ? formatIso(value) : value;
       if (key === "aperture") row.apertureSource = value;
       const targetHeader = row.fieldHeaders[key] || FIELDS[key];
       if (!state.headers.includes(targetHeader)) state.headers.push(targetHeader);
@@ -982,7 +1009,6 @@
     if (!row.title) warnings.push("作品タイトルが未入力です");
     if (!row.author) warnings.push("表記名が未入力です");
     if (row.captionOverflow) warnings.push("キャプションが…で見切れています");
-    if (/^\d+$/.test(row.iso)) warnings.push("ISOが数字だけです");
     if (row.exifStatus?.state === "error") warnings.push("画像をダウンロードできませんでした。フォルダの権限を「リンクを知っている全員」にしてください");
     return warnings;
   }
@@ -996,7 +1022,7 @@
       const overflow = Boolean(caption && caption.scrollHeight > caption.clientHeight + 1);
       if (row.captionOverflow !== overflow) changed = true;
       row.captionOverflow = overflow;
-      const visualWarnings = rowWarnings(row).filter((warning) => warning.includes("見切れ") || warning.includes("ISO"));
+      const visualWarnings = rowWarnings(row).filter((warning) => warning.includes("見切れ"));
       if (visualWarnings.length) {
         const alerts = document.createElement("div");
         alerts.className = "card-alerts";
@@ -1083,9 +1109,10 @@
     });
     const settings = document.createElement("div");
     settings.className = "settings";
-    const values = [["aperture", row.aperture], ["shutter", normalizeShutter(row.shutter)], ["iso", row.iso]];
+    const values = [["aperture", row.aperture], ["shutter", normalizeShutter(row.shutter)], ["iso", formatIso(row.iso)]];
     values.filter(([, value]) => value).forEach(([key, value]) => {
       const item = document.createElement("span");
+      item.className = key;
       if (key === "aperture" && state.normalizeAperture && state.aperturePrefix && value.startsWith(state.aperturePrefix)) {
         const prefix = document.createElement("span");
         prefix.className = `aperture-prefix${state.apertureItalic ? " italic" : ""}`;
@@ -1175,7 +1202,12 @@
       title: 7,
       person: 3.57,
       caption: 3.185,
-      tech: 3.825
+      location: 3.825,
+      camera: 3.825,
+      lens: 3.4425,
+      aperture: 3.825,
+      shutter: 3.825,
+      iso: 3.825
     };
     Object.entries(definitions).forEach(([key, millimeters]) => {
       const scale = typography[key] / 100;
