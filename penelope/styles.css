@@ -112,6 +112,11 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .caption-card:nth-child(n+5) { border-bottom: 0; }
 .caption-card.selected { outline-color: transparent; }
 @media screen { .caption-card.selected { outline-color: var(--accent); } }
+.paired-cell { min-width: 0; min-height: 0; position: relative; cursor: pointer; outline: 3px solid transparent; outline-offset: -3px; }
+@media screen { .paired-cell.selected { outline-color: var(--accent); } }
+.paired-card .card-primary:last-child { border-right: 0; }
+.paired-caption-cell { display: flex; align-items: center; padding: 4.3mm; overflow: hidden; }
+.paired-caption-cell:first-child { border-right: 1px solid #ededeb; }
 .card-primary, .card-tech { min-width: 0; min-height: 0; padding: 4.3mm; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
 .card-primary { border-right: 1px solid #ededeb; }
 .card-title { margin: 0 0 20px; flex-shrink: 0; font: 600 var(--title-font)/1.35 var(--serif); overflow-wrap: anywhere; }
@@ -262,5 +267,5 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
   .workspace, .workspace.has-data, .stage, .loaded-view, .preview-scroll, .pages { display: block; height: auto; overflow: visible; background: white; padding: 0; }
   .print-page { width: 297mm; height: 210mm; zoom: 1 !important; break-after: page; box-shadow: none; }
   .print-page:last-child { break-after: auto; }
-  .caption-card.selected { outline-color: transparent; }
+  .caption-card.selected, .paired-cell.selected { outline-color: transparent; }
 }

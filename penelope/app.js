@@ -245,7 +245,7 @@
     row.splitCaption = els.splitCaptionToggle.checked;
     row.raw[SPLIT_CAPTION_HEADER] = row.splitCaption ? "はい" : "";
     if (!state.headers.includes(SPLIT_CAPTION_HEADER)) state.headers.push(SPLIT_CAPTION_HEADER);
-    if (state.page !== "all") state.page = String(buildPageLayout().findIndex((page) => page.some((entry) => entry?.rowIndex === state.selected)));
+    if (state.page !== "all") state.page = String(buildPageLayout().findIndex((page) => page.some((entry) => entry && (entry.rowIndex === state.selected || entry.pairedRowIndex === state.selected))));
     renderStats();
     renderPageOptions();
     renderPages();
@@ -275,6 +275,7 @@
     row.raw[targetHeader] = input.name === "iso" ? row.iso : input.value;
     renderStats();
     renderList();
+    if (TECH_FIELDS.includes(input.name)) renderPageOptions();
     renderPages();
     pulseSaved();
   });
@@ -292,6 +293,7 @@
     row.aperture = normalized;
     row.raw[ensureFieldHeader("aperture")] = normalized;
     renderList();
+    renderPageOptions();
     renderPages();
     pulseSaved();
   });
@@ -302,6 +304,7 @@
     row.iso = formatIso(event.target.value);
     event.target.value = row.iso;
     row.raw[ensureFieldHeader("iso")] = row.iso;
+    renderPageOptions();
     renderPages();
     pulseSaved();
   });
@@ -512,6 +515,7 @@
     const field = els.editorForm.elements.aperture;
     const selected = state.rows[state.selected];
     if (field && selected) field.value = selected.aperture;
+    renderPageOptions();
     renderPages();
   }
 
@@ -846,6 +850,7 @@
         row.exifStatus = { state: "success", text: `画像からExifを自動取得し、空欄の${count}項目を補完しました。` };
         renderStats();
         renderList();
+        renderPageOptions();
         renderPages();
         if (state.rows[state.selected] === row) renderEditor();
         return;
@@ -989,15 +994,27 @@
 
   function buildPageLayout() {
     if (!state.rows.length) return [];
+    const pairStarts = new Map();
+    const pairedSeconds = new Set();
+    [false, true].forEach((splitCaption) => {
+      const candidates = state.rows.flatMap((row, index) =>
+        row.splitCaption === splitCaption && TECH_FIELDS.every((key) => !clean(row[key])) ? [index] : []);
+      for (let index = 0; index + 1 < candidates.length; index += 2) {
+        pairStarts.set(candidates[index], candidates[index + 1]);
+        pairedSeconds.add(candidates[index + 1]);
+      }
+    });
     const pages = [Array(6).fill(null)];
     let pageIndex = 0;
     state.rows.forEach((row, rowIndex) => {
+      if (pairedSeconds.has(rowIndex)) return;
+      const pairedRowIndex = pairStarts.get(rowIndex);
       while (true) {
         const page = pages[pageIndex];
         const slot = page.findIndex((entry, index) => !entry && (!row.splitCaption || (index < 4 && !page[index + 2])));
         if (slot >= 0) {
-          page[slot] = { rowIndex, part: row.splitCaption ? "info" : "normal" };
-          if (row.splitCaption) page[slot + 2] = { rowIndex, part: "caption" };
+          page[slot] = { rowIndex, pairedRowIndex, part: row.splitCaption ? "info" : "normal" };
+          if (row.splitCaption) page[slot + 2] = { rowIndex, pairedRowIndex, part: "caption" };
           break;
         }
         pageIndex += 1;
@@ -1031,9 +1048,11 @@
       page.setAttribute("aria-label", `${pageIndex + 1}ページ目`);
       for (let slot = 0; slot < 6; slot += 1) {
         const entry = slots[slot];
-        if (entry) page.append(entry.part === "caption"
-          ? createSplitCaptionCard(state.rows[entry.rowIndex], entry.rowIndex)
-          : createCard(state.rows[entry.rowIndex], entry.rowIndex, entry.part));
+        if (entry) page.append(entry.pairedRowIndex !== undefined
+          ? createPairedCard(entry)
+          : entry.part === "caption"
+            ? createSplitCaptionCard(state.rows[entry.rowIndex], entry.rowIndex)
+            : createCard(state.rows[entry.rowIndex], entry.rowIndex, entry.part));
         else {
           const blank = document.createElement("div");
           blank.className = "caption-card blank-card";
@@ -1061,13 +1080,16 @@
   function detectLayoutWarnings() {
     let changed = false;
     const overflows = new Map();
-    els.pages.querySelectorAll(".caption-card[data-row-index]").forEach((card) => {
+    els.pages.querySelectorAll(".caption-card[data-row-index], .paired-cell[data-row-index]").forEach((card) => {
       const row = state.rows[Number(card.dataset.rowIndex)];
       if (!row) return;
       card.querySelector(".card-alerts")?.remove();
       const caption = card.querySelector(".card-caption");
-      const primary = card.classList.contains("split-caption") ? card : card.querySelector(".card-primary");
+      const primary = card.classList.contains("split-caption") || card.classList.contains("paired-cell")
+        ? card : card.querySelector(".card-primary");
       const tech = card.querySelector(".card-tech");
+      const captionOnly = card.classList.contains("split-caption") || card.classList.contains("paired-caption-cell");
+      const infoOnly = card.classList.contains("split-info") || card.closest(".paired-info");
       const fittedTypography = { ...row.typography };
       applyTypography(card, fittedTypography);
       for (let attempt = 0; attempt < 31; attempt += 1) {
@@ -1077,8 +1099,8 @@
         if (!captionClipped && !primaryOverflow && !techOverflow) break;
         const keys = new Set();
         if (captionClipped) keys.add("caption");
-        if (primaryOverflow) (card.classList.contains("split-caption") ? ["caption"]
-          : card.classList.contains("split-info") || !caption ? ["title", "person"] : ["caption"]).forEach((key) => keys.add(key));
+        if (primaryOverflow) (captionOnly ? ["caption"]
+          : infoOnly || !caption ? ["title", "person"] : ["caption"]).forEach((key) => keys.add(key));
         if (techOverflow) TECH_FIELDS.forEach((key) => keys.add(key));
         let shrunk = false;
         keys.forEach((key) => {
@@ -1152,6 +1174,37 @@
       if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choose(); }
     });
 
+    const primary = createPrimary(row, part);
+
+    const tech = document.createElement("div");
+    tech.className = "card-tech";
+    [["location", row.location], ["camera", row.camera], ["lens", row.lens]].forEach(([className, value]) => {
+      if (!value) return;
+      const item = document.createElement("div");
+      item.className = className;
+      item.textContent = value;
+      tech.append(item);
+    });
+    const settings = document.createElement("div");
+    settings.className = "settings";
+    const values = [["aperture", row.aperture], ["shutter", normalizeShutter(row.shutter)], ["iso", formatIso(row.iso)]];
+    values.filter(([, value]) => value).forEach(([key, value]) => {
+      const item = document.createElement("span");
+      item.className = key;
+      if (key === "aperture" && state.normalizeAperture && state.aperturePrefix && value.startsWith(state.aperturePrefix)) {
+        const prefix = document.createElement("span");
+        prefix.className = `aperture-prefix${state.apertureItalic ? " italic" : ""}`;
+        prefix.textContent = state.aperturePrefix;
+        item.append(prefix, value.slice(state.aperturePrefix.length));
+      } else item.textContent = value;
+      settings.append(item);
+    });
+    if (settings.children.length) tech.append(settings);
+    card.append(primary, tech);
+    return card;
+  }
+
+  function createPrimary(row, part) {
     const primary = document.createElement("div");
     primary.className = "card-primary";
     const title = document.createElement("h3");
@@ -1186,31 +1239,35 @@
       primary.append(caption);
     }
 
-    const tech = document.createElement("div");
-    tech.className = "card-tech";
-    [["location", row.location], ["camera", row.camera], ["lens", row.lens]].forEach(([className, value]) => {
-      if (!value) return;
-      const item = document.createElement("div");
-      item.className = className;
-      item.textContent = value;
-      tech.append(item);
+    return primary;
+  }
+
+  function createPairedCard(entry) {
+    const card = document.createElement("article");
+    card.className = `caption-card paired-card paired-${entry.part}`;
+    [entry.rowIndex, entry.pairedRowIndex].forEach((index) => {
+      const row = state.rows[index];
+      const cell = entry.part === "caption" ? document.createElement("div") : createPrimary(row, entry.part);
+      if (entry.part === "caption") {
+        cell.className = "paired-caption-cell";
+        const caption = document.createElement("p");
+        caption.className = "split-caption-text";
+        caption.textContent = row.caption;
+        cell.append(caption);
+      }
+      cell.classList.add("paired-cell");
+      if (index === state.selected) cell.classList.add("selected");
+      cell.dataset.rowIndex = String(index);
+      cell.tabIndex = 0;
+      cell.setAttribute("role", "button");
+      cell.setAttribute("aria-label", `${index + 1}. ${row.title || "タイトル未入力"}${entry.part === "caption" ? "のキャプション" : ""}`);
+      applyTypography(cell, row.typography);
+      cell.addEventListener("click", () => selectRow(index));
+      cell.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectRow(index); }
+      });
+      card.append(cell);
     });
-    const settings = document.createElement("div");
-    settings.className = "settings";
-    const values = [["aperture", row.aperture], ["shutter", normalizeShutter(row.shutter)], ["iso", formatIso(row.iso)]];
-    values.filter(([, value]) => value).forEach(([key, value]) => {
-      const item = document.createElement("span");
-      item.className = key;
-      if (key === "aperture" && state.normalizeAperture && state.aperturePrefix && value.startsWith(state.aperturePrefix)) {
-        const prefix = document.createElement("span");
-        prefix.className = `aperture-prefix${state.apertureItalic ? " italic" : ""}`;
-        prefix.textContent = state.aperturePrefix;
-        item.append(prefix, value.slice(state.aperturePrefix.length));
-      } else item.textContent = value;
-      settings.append(item);
-    });
-    if (settings.children.length) tech.append(settings);
-    card.append(primary, tech);
     return card;
   }
 
@@ -1358,13 +1415,13 @@
 
   function selectRow(index) {
     state.selected = index;
-    const pageIndex = buildPageLayout().findIndex((page) => page.some((entry) => entry?.rowIndex === index));
+    const pageIndex = buildPageLayout().findIndex((page) => page.some((entry) => entry && (entry.rowIndex === index || entry.pairedRowIndex === index)));
     if (state.page !== "all" && Number(state.page) !== pageIndex) state.page = String(pageIndex);
     renderList();
     renderEditor();
     syncTypographyControls();
     renderPages();
-    document.querySelector(`.caption-card[data-row-index="${index}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    els.pages.querySelector(`[data-row-index="${index}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 
   function moveSelected(delta) {
