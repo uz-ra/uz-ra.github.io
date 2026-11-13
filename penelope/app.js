@@ -99,6 +99,7 @@
   applyTypography();
   const LOCAL_EDITOR_ORIGIN = "http://127.0.0.1:8769";
   const PUBLIC_EDITOR_ORIGIN = "https://uz-ra.github.io";
+  const EXIF_RELAY_ORIGIN = "https://penelope-exif-relay.hanabiadhd.chatgpt.site";
   const isLocalEditor = location.origin === LOCAL_EDITOR_ORIGIN;
   els.transferButton.hidden = isLocalEditor;
   let handoffWindow = null;
@@ -810,9 +811,9 @@
             const key = url.searchParams.get("resourcekey");
             const query = `id=${encodeURIComponent(id)}${key ? `&resourcekey=${encodeURIComponent(key)}` : ""}`;
             return [
-              ...(state.localExifBridge ? [`http://127.0.0.1:8769/drive-image?${query}`] : []),
               `https://drive.usercontent.google.com/download?${query}&export=download`,
-              `https://drive.google.com/uc?export=download&${query}`
+              `${EXIF_RELAY_ORIGIN}/drive-image?${query}`,
+              ...(state.localExifBridge ? [`${LOCAL_EDITOR_ORIGIN}/drive-image?${query}`] : [])
             ];
           }
         }
@@ -862,7 +863,7 @@
     if (token !== row.exifFetchToken || !state.rows.includes(row)) return;
     row.exifStatus = downloaded
       ? { state: "no-exif", text: "画像は取得できましたが、対応するExif情報は見つかりませんでした。" }
-      : { state: "error", text: "画像をダウンロードできませんでした。フォルダの権限を「リンクを知っている全員」にしてください（閲覧権限で十分です）。公開済みなら、このMacの補助プログラムを起動して再取得するか、画像を手動で選んでください。" };
+      : { state: "error", text: "画像を取得できませんでした。Google Driveのファイルを「リンクを知っている全員」に公開し（閲覧者で十分です）、JPEG/TIFF形式・80MB以下か確認してください。公開済みでも失敗する場合は画像を手動で選んでください。" };
     renderStats();
     renderList();
     if (state.rows[state.selected] === row) renderExifPanel();
@@ -1073,7 +1074,7 @@
     if (!row.title) warnings.push("作品タイトルが未入力です");
     if (!row.author) warnings.push("表記名が未入力です");
     if (row.captionOverflow) warnings.push("文字が枠内に収まらず見切れています");
-    if (row.exifStatus?.state === "error") warnings.push("画像をダウンロードできませんでした。フォルダの権限を「リンクを知っている全員」にしてください");
+    if (row.exifStatus?.state === "error") warnings.push("画像を取得できませんでした。Google Driveの共有設定と画像形式を確認してください");
     return warnings;
   }
 

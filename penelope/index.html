@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=Shippori+Mincho:wght@500;600&amp;display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23151817'/%3E%3Cpath d='M17 17h30v30H17z' fill='none' stroke='%23ff99d4' stroke-width='4'/%3E%3Cpath d='M23 39l8-14 10 14' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=20261103-1" />
+    <link rel="stylesheet" href="./styles.css?v=20261113-1" />
   </head>
   <body>
     <header class="app-header">
@@ -22,7 +22,6 @@
         CSVはブラウザ内だけで処理されます
       </div>
       <div class="header-actions">
-        <button class="button ghost" type="button" id="transferButton" disabled>補助画面へ編集中データを移す</button>
         <button class="button ghost" type="button" id="downloadCsvButton" disabled>CSVを書き出す</button>
         <button class="button primary" type="button" id="printButton" disabled>PDF / 印刷</button>
       </div>
@@ -158,15 +157,17 @@
           <label class="field wide"><span>Exif情報の取得</span><select name="exifConsent"><option value="">指定なし</option><option value="はい">はい</option><option value="いいえ">いいえ</option></select></label>
           <label class="field wide"><span>作品画像のリンク</span><input name="imageLink" type="text" /></label>
           <div class="exif-panel" id="exifPanel" hidden>
-            <p>画像リンクからExifを自動取得し、撮影情報の空欄だけを補完します。取得できない場合は手動で画像を選べます。</p>
+            <p>Google Driveの共有画像を自動取得し、撮影情報の空欄だけを補完します。インストールや補助プログラムの起動は不要です。取得できない場合は手動で画像を選べます。</p>
             <div class="exif-links" id="imageLinks"></div>
             <p id="exifStatus" class="exif-status" role="status" aria-live="polite"></p>
-            <label class="check-field"><input type="checkbox" id="localExifToggle" />このMacの補助プログラムを使う</label>
-            <p>公開画面で「補助画面へ編集中データを移す」を押すと、作品と列割り当てを引き継げます。</p>
             <button class="button compact" type="button" id="retryExifButton">画像リンクから再取得</button>
             <label class="button compact exif-picker">画像を選んでExifを確認<input id="exifFileInput" type="file" accept=".jpg,.jpeg,.tif,.tiff,image/jpeg,image/tiff" hidden /></label>
             <div id="exifResult" class="exif-result" aria-live="polite"></div>
             <button class="button compact" type="button" id="applyExifButton" disabled>空欄に反映する</button>
+            <details class="legacy-helper"><summary>Macの補助プログラムを使う（通常は不要）</summary>
+              <label class="check-field"><input type="checkbox" id="localExifToggle" />このMacの補助プログラムを使う</label>
+              <button class="button compact" type="button" id="transferButton" disabled>補助画面へ編集中データを移す</button>
+            </details>
           </div>
           <label class="field wide"><span>SNSリンク（QR）</span><input name="sns" type="url" inputmode="url" /></label>
         </form>
@@ -197,6 +198,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./qrcode.min.js"></script>
-    <script src="./app.js?v=20261103-1"></script>
+    <script src="./app.js?v=20261113-1"></script>
   </body>
 </html>

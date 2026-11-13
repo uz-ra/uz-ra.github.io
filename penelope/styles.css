@@ -201,6 +201,9 @@ button, label, select { -webkit-tap-highlight-color: transparent; }
 .exif-status { color: #555; }
 .exif-status.warning { padding: 8px; border-left: 3px solid #c0506c; background: #fff2f5; color: #8a2342; }
 .exif-panel button:disabled { opacity: .45; cursor: not-allowed; }
+.legacy-helper { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.legacy-helper summary { cursor: pointer; color: var(--muted); }
+.legacy-helper .check-field { margin: 9px 0; }
 .field input { height: 38px; }
 .field textarea { resize: vertical; min-height: 105px; line-height: 1.65; }
 .field input:focus, .field textarea:focus { border-color: #5d655f; box-shadow: 0 0 0 2px rgba(255,153,212,.42); }
