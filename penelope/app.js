@@ -1081,51 +1081,58 @@
   function detectLayoutWarnings() {
     let changed = false;
     const overflows = new Map();
-    els.pages.querySelectorAll(".caption-card[data-row-index], .paired-cell[data-row-index]").forEach((card) => {
-      const row = state.rows[Number(card.dataset.rowIndex)];
-      if (!row) return;
-      card.querySelector(".card-alerts")?.remove();
-      const caption = card.querySelector(".card-caption");
-      const primary = card.classList.contains("split-caption") || card.classList.contains("paired-cell")
-        ? card : card.querySelector(".card-primary");
-      const tech = card.querySelector(".card-tech");
-      const captionOnly = card.classList.contains("split-caption") || card.classList.contains("paired-caption-cell");
-      const infoOnly = card.classList.contains("split-info") || card.closest(".paired-info");
-      const fittedTypography = { ...row.typography };
-      applyTypography(card, fittedTypography);
-      for (let attempt = 0; attempt < 31; attempt += 1) {
-        const captionClipped = Boolean(caption && caption.scrollHeight > caption.clientHeight + 1);
-        const primaryOverflow = contentOverflows(primary);
-        const techOverflow = contentOverflows(tech);
-        if (!captionClipped && !primaryOverflow && !techOverflow) break;
-        const keys = new Set();
-        if (captionClipped) keys.add("caption");
-        if (primaryOverflow) (captionOnly ? ["caption"]
-          : infoOnly || !caption ? ["title", "person"] : ["caption"]).forEach((key) => keys.add(key));
-        if (techOverflow) TECH_FIELDS.forEach((key) => keys.add(key));
-        let shrunk = false;
-        keys.forEach((key) => {
-          const minimum = key === "caption" ? 80 : 50;
-          if (fittedTypography[key] > minimum) {
-            fittedTypography[key] = Math.max(minimum, fittedTypography[key] - 5);
-            shrunk = true;
-          }
-        });
-        if (!shrunk) break;
+    const previewZoom = els.pages.style.getPropertyValue("--preview-zoom");
+    els.pages.style.setProperty("--preview-zoom", "1");
+    try {
+      els.pages.querySelectorAll(".caption-card[data-row-index], .paired-cell[data-row-index]").forEach((card) => {
+        const row = state.rows[Number(card.dataset.rowIndex)];
+        if (!row) return;
+        card.querySelector(".card-alerts")?.remove();
+        const caption = card.querySelector(".card-caption");
+        const primary = card.classList.contains("split-caption") || card.classList.contains("paired-cell")
+          ? card : card.querySelector(".card-primary");
+        const tech = card.querySelector(".card-tech");
+        const captionOnly = card.classList.contains("split-caption") || card.classList.contains("paired-caption-cell");
+        const infoOnly = card.classList.contains("split-info") || card.closest(".paired-info");
+        const fittedTypography = { ...row.typography };
         applyTypography(card, fittedTypography);
-      }
-      const overflow = Boolean((caption && caption.scrollHeight > caption.clientHeight + 1)
-        || contentOverflows(primary) || contentOverflows(tech));
-      overflows.set(row, Boolean(overflows.get(row) || overflow));
-      if (overflow) {
-        const alerts = document.createElement("div");
-        alerts.className = "card-alerts";
-        const alert = document.createElement("span");
-        alert.textContent = "⚠ 文字が枠内に収まりません";
-        alerts.append(alert);
-        card.append(alerts);
-      }
-    });
+        for (let attempt = 0; attempt < 31; attempt += 1) {
+          const captionClipped = Boolean(caption && caption.scrollHeight > caption.clientHeight + 1);
+          const primaryOverflow = contentOverflows(primary);
+          const techOverflow = contentOverflows(tech);
+          if (!captionClipped && !primaryOverflow && !techOverflow) break;
+          const keys = new Set();
+          if (captionClipped) keys.add("caption");
+          if (primaryOverflow) (captionOnly ? ["caption"]
+            : infoOnly || !caption ? ["title", "person"] : ["caption"]).forEach((key) => keys.add(key));
+          if (techOverflow) TECH_FIELDS.forEach((key) => keys.add(key));
+          let shrunk = false;
+          keys.forEach((key) => {
+            const minimum = key === "caption" ? 80 : 50;
+            if (fittedTypography[key] > minimum) {
+              fittedTypography[key] = Math.max(minimum, fittedTypography[key] - 5);
+              shrunk = true;
+            }
+          });
+          if (!shrunk) break;
+          applyTypography(card, fittedTypography);
+        }
+        const overflow = Boolean((caption && caption.scrollHeight > caption.clientHeight + 1)
+          || contentOverflows(primary) || contentOverflows(tech));
+        overflows.set(row, Boolean(overflows.get(row) || overflow));
+        if (overflow) {
+          const alerts = document.createElement("div");
+          alerts.className = "card-alerts";
+          const alert = document.createElement("span");
+          alert.textContent = "⚠ 文字が枠内に収まりません";
+          alerts.append(alert);
+          card.append(alerts);
+        }
+      });
+    } finally {
+      if (previewZoom) els.pages.style.setProperty("--preview-zoom", previewZoom);
+      else els.pages.style.removeProperty("--preview-zoom");
+    }
     overflows.forEach((overflow, row) => {
       if (row.captionOverflow !== overflow) changed = true;
       row.captionOverflow = overflow;
@@ -1138,6 +1145,7 @@
 
   function contentOverflows(container) {
     if (!container?.children.length) return false;
+    if (container.scrollHeight > container.clientHeight + 1 || container.scrollWidth > container.clientWidth + 1) return true;
     const bounds = container.getBoundingClientRect();
     const style = getComputedStyle(container);
     const zoom = bounds.height / container.offsetHeight;
